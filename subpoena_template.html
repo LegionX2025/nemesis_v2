@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SUBPOENA DUCES TECUM</title>
+    <style>
+        body { font-family: "Times New Roman", Times, serif; font-size: 12pt; margin: 40px; color: #000; background: #fff; line-height: 1.5; }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .underline { text-decoration: underline; }
+        .header { border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; }
+        .footer { margin-top: 50px; font-size: 10pt; text-align: center; color: #555; border-top: 1px solid #ccc; padding-top: 10px; }
+        .signature-line { width: 300px; border-bottom: 1px solid #000; margin-top: 50px; margin-bottom: 10px; }
+        .watermark { position: fixed; top: 30%; left: 15%; opacity: 0.1; z-index: -1; transform: rotate(-20deg); width: 70%; text-align: center; }
+        .watermark img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="watermark"><img src="/logo_nemesis.jpeg" alt="LIONSGATE"></div>
+
+    <div class="header text-center">
+        <h2 class="bold underline">SUBPOENA DUCES TECUM</h2>
+        <p>FOR THE PRODUCTION OF DOCUMENTS AND RECORDS</p>
+    </div>
+
+    <p><strong>TO:</strong> {cex_entity_name} Compliance and Legal Department</p>
+    <p><strong>DATE:</strong> {date_generated}</p>
+    <p><strong>SUBJECT:</strong> Request for Information Regarding Cryptocurrency Account Activity</p>
+
+    <p>Pursuant to an active investigation into the illicit routing of funds, you are hereby requested to preserve and produce any and all records, documents, and data associated with the following cryptocurrency address(es) and/or transaction hash(es) identified within your custody:</p>
+
+    <ul>
+        <li><strong>Identified Custodial Address:</strong> <span class="bold">{address}</span></li>
+        <li><strong>Blockchain Network:</strong> {chain}</li>
+        <li><strong>Total Asset Value Implicated:</strong> {total_amount} USD</li>
+    </ul>
+
+    <p class="bold underline">DOCUMENTS TO BE PRODUCED:</p>
+    <ol>
+        <li><strong>Account Information:</strong> All identifying information for the account holding or controlling the above address, including but not limited to full name, date of birth, physical address, email addresses, telephone numbers, and IP address history.</li>
+        <li><strong>KYC/AML Records:</strong> Copies of all Know Your Customer (KYC) documentation, including government-issued identification, utility bills, selfies, and any enhanced due diligence (EDD) records.</li>
+        <li><strong>Transaction History:</strong> A complete ledger of all deposits, withdrawals, trades, and internal transfers associated with the account from its inception to the present.</li>
+        <li><strong>Linked Accounts:</strong> Information identifying any other accounts on your platform that share the same IP addresses, device identifiers, email addresses, phone numbers, or funding sources.</li>
+    </ol>
+
+    <p>We request that a preservation hold be placed on the account(s) immediately to prevent the dissipation of assets or destruction of evidence while formal legal process is obtained in the appropriate jurisdiction.</p>
+
+    <p>Please provide the requested information in a standard machine-readable format (e.g., CSV, JSON, PDF) within 14 days of receipt of this request.</p>
+
+    <div class="signature-line"></div>
+    <p class="bold">Lionsgate Intelligence Network</p>
+    <p>Cyber Forensics Division</p>
+    <p>contact@lionsgate.network</p>
+
+    <div class="footer">
+        Generated autonomously by the NEMESIS Tracing Engine.<br>
+        Document ID: NEM-{address}-{date_id}
+    </div>
+</body>
+</html>

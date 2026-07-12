@@ -1,0 +1,25 @@
+services:
+  nemesis_engine:
+    build: .
+    container_name: nemesis_engine
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    container_name: nemesis_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - nemesis_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  nemesis_data:

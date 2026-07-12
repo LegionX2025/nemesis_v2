@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lionsgate Nemesis Pro | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/nemesis-ui.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="flex flex-col min-h-screen bg-slate-50">
+    <div class="nemesis-watermark"></div>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-8 relative z-10 my-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                <i class="fa-solid fa-server text-emerald-500"></i> Global Command Center
+            </h2>
+            <div class="flex gap-2">
+                <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold tracking-widest"><i class="fa-solid fa-circle text-[8px] mr-1"></i> NEON PG LIVE</span>
+                <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold tracking-widest"><i class="fa-solid fa-circle text-[8px] mr-1"></i> CLOUDFLARE D1 LIVE</span>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="light-glass-panel p-6">
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Total Traces</p>
+                <p class="text-4xl font-black text-slate-800 font-mono">1,402</p>
+            </div>
+            <div class="light-glass-panel p-6 border-t-4 border-t-red-500">
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Critical Risk Targets</p>
+                <p class="text-4xl font-black text-red-600 font-mono">87</p>
+            </div>
+            <div class="light-glass-panel p-6">
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Cached Entities</p>
+                <p class="text-4xl font-black text-slate-800 font-mono">14,922</p>
+            </div>
+            <div class="light-glass-panel p-6">
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Subpoenas Generated</p>
+                <p class="text-4xl font-black text-slate-800 font-mono">34</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Global Intelligence Cache -->
+            <div class="light-glass-panel p-6">
+                <h3 class="font-bold text-slate-800 mb-4 uppercase tracking-widest text-sm flex justify-between items-center">
+                    <span>Recent Intelligence Ingests</span>
+                    <i class="fa-solid fa-database text-slate-400"></i>
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="text-xs uppercase bg-slate-50 border-b border-slate-200 text-slate-500">
+                            <tr>
+                                <th class="py-3 px-4 font-bold">Target</th>
+                                <th class="py-3 px-4 font-bold">Chain</th>
+                                <th class="py-3 px-4 font-bold">Risk</th>
+                                <th class="py-3 px-4 font-bold">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-mono text-xs">
+                            <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                <td class="py-3 px-4 text-blue-600 font-bold">0x159a...be89</td>
+                                <td class="py-3 px-4">ETH</td>
+                                <td class="py-3 px-4"><span class="bg-red-100 text-red-700 px-2 py-1 rounded">CRITICAL</span></td>
+                                <td class="py-3 px-4 text-slate-400">2 mins ago</td>
+                            </tr>
+                            <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                <td class="py-3 px-4 text-blue-600 font-bold">0x742d...44e1</td>
+                                <td class="py-3 px-4">BSC</td>
+                                <td class="py-3 px-4"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">MODERATE</span></td>
+                                <td class="py-3 px-4 text-slate-400">15 mins ago</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 text-blue-600 font-bold">bc1q...9d4p</td>
+                                <td class="py-3 px-4">BTC</td>
+                                <td class="py-3 px-4"><span class="bg-red-100 text-red-700 px-2 py-1 rounded">CRITICAL</span></td>
+                                <td class="py-3 px-4 text-slate-400">1 hour ago</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- System Health Chart -->
+            <div class="light-glass-panel p-6">
+                <h3 class="font-bold text-slate-800 mb-4 uppercase tracking-widest text-sm">System Latency (ms)</h3>
+                <canvas id="latencyChart" height="200"></canvas>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="/nemesis-ui.js"></script>
+    <script>
+        // Mock Chart data for Admin dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('latencyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['10:00', '10:05', '10:10', '10:15', '10:20', '10:25', '10:30'],
+                    datasets: [{
+                        label: 'API Latency',
+                        data: [120, 150, 110, 180, 130, 125, 140],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

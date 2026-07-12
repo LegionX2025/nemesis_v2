@@ -1,0 +1,12 @@
+.env
+.git
+__pycache__/
+*.pyc
+*.log
+*.zip
+dist/
+node_modules/
+package-lock.json
+build_frontend.py
+requirements.txt
+nemesis_system.log
