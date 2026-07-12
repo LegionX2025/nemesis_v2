@@ -680,15 +680,15 @@
                     
                     
                     // Outflow Amount (Dummy/Calculated)
-                    let amountText = n.custom_amount || (n.title && n.title.includes("$") ? n.title.split("
-")[0] : "$0.00");
+                    let amountText = n.custom_amount || (n.title && n.title.includes("$") ? n.title.split("\n")[0] : "$0.00");
+
                     ctx.font = 'bold 14px "Inter", sans-serif';
                     ctx.fillStyle = "#3b82f6"; // Blue
                     ctx.fillText(amountText, pos.x, pos.y + 65);
                     
                     // Entity Badge
-                    let isCex = n.custom_is_cex !== undefined ? n.custom_is_cex : (n.label.toUpperCase().includes("EXCHANGE") || n.label.toUpperCase().includes("CUSTODIAL"));
-                    let isSuspect = n.custom_is_suspect !== undefined ? n.custom_is_suspect : (n.label.toUpperCase().includes("UNKNOWN") || n.label.toUpperCase().includes("SUSPECT"));
+                    isCex = n.custom_is_cex !== undefined ? n.custom_is_cex : (n.label.toUpperCase().includes("EXCHANGE") || n.label.toUpperCase().includes("CUSTODIAL"));
+                    isSuspect = n.custom_is_suspect !== undefined ? n.custom_is_suspect : (n.label.toUpperCase().includes("UNKNOWN") || n.label.toUpperCase().includes("SUSPECT"));
                     let entityName = n.custom_entity ? n.custom_entity.substring(0,15) : (isCex ? "BINANCE" : (isSuspect ? "UNKNOWN" : "WALLET"));
                     
                     ctx.fillStyle = isCex ? "#dcfce7" : "#e0f2fe"; // light green or light blue
@@ -743,7 +743,7 @@
                     
                     ctx.font = '900 8px "Font Awesome 6 Free"';
                     ctx.fillStyle = "#ffffff";
-                    let icon = isCex ? '\\uf00c' : (isSuspect ? '\\uf128' : '\\uf3ed');
+                    icon = isCex ? '\\uf00c' : (isSuspect ? '\\uf128' : '\\uf3ed');
                     ctx.fillText(icon, pos.x + 18, pos.y + 18);
                 });
             });

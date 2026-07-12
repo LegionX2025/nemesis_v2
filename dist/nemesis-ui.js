@@ -27,16 +27,22 @@ function injectGlobalNavigation() {
     `;
 
     const footerHtml = `
-        <footer class="nemesis-footer-light mt-auto">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+        <footer class="nemesis-footer-light mt-auto bg-slate-50 border-t border-slate-200 py-6 px-8 relative z-50">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="text-left">
-                    <p class="font-bold text-slate-800">Lionsgate Network</p>
-                    <p class="text-xs text-slate-500 mt-1">Intelligence & Forensics Division &copy; 2026</p>
+                    <p class="font-black text-slate-800 tracking-widest uppercase">Lionsgate Intelligence Network</p>
+                    <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase tracking-widest">NEMESIS™ &copy; 2026. Restricted Use Only.</p>
+                </div>
+                <div class="flex flex-wrap gap-6 text-[11px] font-bold tracking-widest text-slate-600 uppercase">
+                    <a href="#" class="hover:text-blue-600 transition" onclick="alert('NEMESIS™ END USER LICENSE AGREEMENT (EULA)...')">Terms of Service</a>
+                    <a href="#" class="hover:text-blue-600 transition">Privacy</a>
+                    <a href="/about.html" class="hover:text-blue-600 transition">About</a>
+                    <a href="/api_docs.html" class="text-blue-600 hover:text-indigo-600 transition flex items-center gap-1"><i class="fa-solid fa-code"></i> API Documentations</a>
                 </div>
                 <div class="flex gap-4 text-slate-400">
-                    <a href="#" class="hover:text-blue-600"><i class="fa-brands fa-twitter"></i></a>
-                    <a href="#" class="hover:text-blue-600"><i class="fa-brands fa-github"></i></a>
-                    <a href="#" class="hover:text-blue-600"><i class="fa-solid fa-envelope"></i></a>
+                    <a href="#" class="hover:text-blue-600 transition"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="hover:text-blue-600 transition"><i class="fa-brands fa-github"></i></a>
+                    <a href="#" class="hover:text-blue-600 transition"><i class="fa-solid fa-envelope"></i></a>
                 </div>
             </div>
         </footer>

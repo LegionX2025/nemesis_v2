@@ -1,26 +1,19 @@
-import re
+import bs4
 import subprocess
-import tempfile
 import os
 
-html = open("tracer.html", encoding="utf-8").read()
-scripts = re.findall(r'<script>(.*?)</script>', html, re.DOTALL)
-for i, script in enumerate(scripts):
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
-        f.write(script)
-        name = f.name
-    res = subprocess.run(["node", "-c", name], capture_output=True, text=True)
-    if res.returncode != 0:
-        print(f"Error in tracer script {i}: {res.stderr}")
-    os.remove(name)
-
-html = open("nemesis_id.html", encoding="utf-8").read()
-scripts = re.findall(r'<script>(.*?)</script>', html, re.DOTALL)
-for i, script in enumerate(scripts):
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
-        f.write(script)
-        name = f.name
-    res = subprocess.run(["node", "-c", name], capture_output=True, text=True)
-    if res.returncode != 0:
-        print(f"Error in nemesis_id script {i}: {res.stderr}")
-    os.remove(name)
+for html_file in ['nemesis_id.html', 'tracer.html']:
+    with open(html_file, 'r', encoding='utf-8') as f:
+        soup = bs4.BeautifulSoup(f, 'html.parser')
+        
+    for i, script in enumerate(soup.find_all('script')):
+        if not script.get('src') and script.string:
+            temp_name = f'temp_{html_file}_script_{i}.js'
+            with open(temp_name, 'w', encoding='utf-8') as f_temp:
+                f_temp.write(script.string)
+            
+            result = subprocess.run(['node', '-c', temp_name], capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"Syntax error in {html_file} script block {i}:")
+                print(result.stderr)
+            os.remove(temp_name)

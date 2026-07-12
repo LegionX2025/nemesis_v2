@@ -111,12 +111,12 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
 
         /* Web3GL Loader */
-        #global-loader { position: fixed; inset: 0; background: radial-gradient(circle at center, #0a0a0a 0%, #000000 100%); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; overflow: hidden; }
-        #global-loader::before { content: ''; position: absolute; inset: -200%; background-image: linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation: grid-move 5s linear infinite; z-index: -1; }
+        #global-loader { position: fixed; inset: 0; background: radial-gradient(circle at center, #f8fafc 0%, #ffffff 100%); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; overflow: hidden; }
+        #global-loader::before { content: ''; position: absolute; inset: -200%; background-image: linear-gradient(rgba(37, 99, 235, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation: grid-move 5s linear infinite; z-index: -1; }
         @keyframes grid-move { 0% { transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); } 100% { transform: perspective(500px) rotateX(60deg) translateY(0px) translateZ(-200px); } }
-        .loader-spinner { border: 4px solid rgba(0, 255, 255, 0.1); border-top: 4px solid #00ffff; border-radius: 50%; width: 80px; height: 80px; animation: spin 1s linear infinite; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+        .loader-spinner { border: 4px solid rgba(37, 99, 235, 0.1); border-top: 4px solid #2563eb; border-radius: 50%; width: 80px; height: 80px; animation: spin 1s linear infinite; margin-bottom: 20px; box-shadow: 0 0 20px rgba(37, 99, 235, 0.2); }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #loader-text { color: #00ffff; font-family: 'Courier New', Courier, monospace; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 16px; text-align: center; text-shadow: 0 0 10px rgba(0,255,255,0.8); }
+        #loader-text { color: #2563eb; font-family: 'Courier New', Courier, monospace; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 16px; text-align: center; text-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
 
         
         .mini-loader {
@@ -131,6 +131,22 @@
         .data-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.03); transition: all 0.2s ease; position: relative; overflow: hidden; }
         .data-card:hover { border-color: #93c5fd; box-shadow: 0 8px 30px rgba(37, 99, 235, 0.08); transform: translateY(-2px); }
         
+        function toggleTerminal() {
+            const term = document.getElementById('floating-terminal');
+            const body = document.getElementById('terminal-body');
+            const icon = document.getElementById('terminal-toggle-btn').querySelector('i');
+            
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                term.style.height = '300px';
+                icon.className = 'fa-solid fa-minus';
+            } else {
+                body.style.display = 'none';
+                term.style.height = '48px'; // Just the header
+                icon.className = 'fa-solid fa-chevron-up';
+            }
+        }
+
         /* Context Menu */
         #custom-context-menu { display: none; position: absolute; z-index: 1000; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 0.5rem 0; min-width: 220px; }
         .context-menu-item { padding: 0.5rem 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #334155; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 0.5rem; }
@@ -192,22 +208,23 @@
     <div id="bg-overlay"></div>
 
     <!-- Global Header Menu -->
-    <header class="custom-header global-header absolute top-0 w-full z-50 flex items-center justify-between px-8 py-4 bg-white border border-slate-200/60 backdrop-blur-md">
+    <header class="custom-header global-header absolute top-0 w-full z-50 flex items-center justify-between px-8 py-4 bg-white border border-slate-200/60 backdrop-blur-md" style="display: none;">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-800 rounded flex items-center justify-center font-black text-white shadow-lg">N</div>
-            <span class="font-black tracking-widest uppercase text-sm text-white">NEMESIS</span>
+            <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-8 h-8 object-contain rounded bg-white">
+            <span class="font-black tracking-widest uppercase text-sm text-slate-800">NEMESIS</span>
         </div>
         
-        <nav class="flex gap-8 text-[11px] font-bold tracking-widest uppercase text-slate-500 font-mono">
-            <a href="/" class="hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-home"></i> Home</a>
-            <a href="/nemesis_id" class="hover:text-fuchsia-400 transition flex items-center gap-2"><i class="fa-solid fa-id-card"></i> Nemesis ID</a>
-            <a href="#" class="hover:text-white cursor-pointer transition flex items-center gap-2">About</a>
-            <a href="#" class="hover:text-white cursor-pointer transition flex items-center gap-2">Capability</a>
-            <a href="#" class="hover:text-white cursor-pointer transition flex items-center gap-2">Content/Details</a>
-            <a href="#" class="hover:text-white cursor-pointer transition flex items-center gap-2">Workflow</a>
-            <a href="#" class="hover:text-white cursor-pointer transition flex items-center gap-2">Architecture</a>
-            <a href="/tracer" class="hover:text-sky-400 transition flex items-center gap-2"><i class="fa-solid fa-network-wired"></i> Tracing Engine</a>
-        </nav>
+        <div class="relative group mt-0.5 ml-4">
+            <button class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition shadow-sm border border-slate-200">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <nav class="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col py-2 z-50 text-[10px] font-bold tracking-widest uppercase">
+                <a href="/" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-home w-4"></i> Home</a>
+                <a href="/nemesis_id" class="px-4 py-2 text-fuchsia-600 bg-fuchsia-50/50 hover:bg-fuchsia-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-id-card w-4"></i> Nemesis ID</a>
+                <a href="/about.html" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-circle-info w-4"></i> About</a>
+                <a href="/tracer.html" class="px-4 py-2 text-slate-600 hover:text-sky-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-network-wired w-4"></i> Tracing Engine</a>
+            </nav>
+        </div>
         
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-600 text-[10px] font-bold font-mono tracking-widest">
@@ -220,13 +237,22 @@
         </div>
     </header>
 
+    <!-- Floating Terminal Container -->
+    <div id="floating-terminal" class="absolute bottom-4 right-4 w-[450px] h-[300px] bg-slate-900/95 backdrop-blur-md rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700 z-[9999] flex flex-col overflow-hidden transition-all pointer-events-auto" style="display: none;">
+        <div class="bg-slate-800 px-4 py-3 flex justify-between items-center border-b border-slate-700 cursor-move" id="terminal-header">
+            <span class="text-xs font-mono font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-terminal text-blue-400"></i> OMNI-CHAIN DATA PIPELINE</span>
+            <button onclick="toggleTerminal()" id="terminal-toggle-btn" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-minus"></i></button>
+        </div>
+        <div id="terminal-body" class="flex-1 p-4 overflow-y-auto font-mono text-[11px] text-emerald-400 space-y-1 bg-slate-950/50 leading-relaxed shadow-inner">
+            <!-- Logs go here -->
+        </div>
+    </div>
+
     <!-- INITIAL SEARCH MODAL OVERLAY -->
-    <div id="initial-search-modal" class="fixed inset-0 bg-slate-50/90 z-[40] flex flex-col items-center justify-center backdrop-blur-sm pt-20">
+    <div id="initial-search-modal" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center pt-20">
         <div class="relative z-10 w-full max-w-2xl px-6">
             <div class="text-center mb-8">
-                <div class="w-24 h-24 mx-auto border-2 border-slate-300 rounded-full flex items-center justify-center text-4xl mb-4 shadow-xl bg-white/80 backdrop-blur">
-                    <i class="fa-solid fa-shield text-blue-500 animate-pulse"></i>
-                </div>
+                <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-24 h-24 mx-auto border border-slate-300 rounded-2xl mb-4 shadow-xl bg-white object-contain">
                 <h1 class="text-5xl font-black font-cyber text-slate-900 tracking-widest drop-shadow-md">NEMESIS ID</h1>
                 <p class="text-slate-500 font-mono text-sm tracking-widest lowercase italic my-2">by</p>
                 <h2 class="text-2xl font-black font-serif text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-800 tracking-widest uppercase relative inline-block">
@@ -246,14 +272,6 @@
                     <button onclick="executeNemesisSearch()" class="absolute right-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg font-bold transition-colors shadow-md z-10">
                         <i class="fa-solid fa-search"></i>
                     </button>
-                </div>
-                <p class="text-center text-slate-500 text-[10px] mt-5 font-mono">System locked to authorized operators only. All queries are logged.</p>
-                <div class="flex flex-wrap justify-center gap-4 mt-6 text-[9px] text-slate-500 font-mono uppercase tracking-widest">
-                    <a href="#" class="hover:text-blue-500 transition">License</a>
-                    <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
-                    <a href="#" class="hover:text-blue-500 transition">Privacy</a>
-                    <a href="#" class="hover:text-blue-500 transition">About</a>
-                    <a href="api_docs.html" target="_blank" class="hover:text-blue-500 transition font-bold text-blue-600/80">API Documentations</a>
                 </div>
             </div>
         </div>
@@ -485,15 +503,17 @@
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-600 font-black font-cyber text-sm tracking-[0.2em] flex items-center drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]"><i class="fa-solid fa-satellite-dish animate-pulse mr-2 text-red-500"></i> NEMESIS by LIONSGATE INTELLIGENCE NETWORK</span>
                 
                 <div class="h-4 w-px bg-slate-600 mx-2"></div>
-                <nav class="flex gap-4 text-[10px] font-bold tracking-widest uppercase mt-0.5">
-                    <a href="/nemesis_id" class="text-blue-600 hover:text-blue-300 transition-colors flex items-center gap-2"><i class="fa-solid fa-fingerprint"></i> Nemesis ID</a>
-                    <a href="#" class="text-slate-500 hover:text-white transition-colors flex items-center gap-1">About</a>
-                    <a href="#" class="text-slate-500 hover:text-white transition-colors flex items-center gap-1">Capability</a>
-                    <a href="#" class="text-slate-500 hover:text-white transition-colors flex items-center gap-1">Content / Details</a>
-                    <a href="#" class="text-slate-500 hover:text-white transition-colors flex items-center gap-1">Workflow</a>
-                    <a href="#" class="text-slate-500 hover:text-white transition-colors flex items-center gap-1">Architecture</a>
-                    <a href="/tracer" class="text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-2"><i class="fa-solid fa-network-wired"></i> Tracing Engine</a>
-                </nav>
+                <!-- Collapsible Global Header Menu -->
+                <div class="relative group mt-0.5">
+                    <button class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <nav class="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col py-2 z-50 text-[10px] font-bold tracking-widest uppercase">
+                        <a href="/" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-home w-4"></i> Home</a>
+                        <a href="/nemesis_id" class="px-4 py-2 text-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-fingerprint w-4"></i> Nemesis ID</a>
+                        <a href="/tracer" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-network-wired w-4"></i> Tracing Engine</a>
+                    </nav>
+                </div>
             </div>
             <div class="flex items-center gap-4 font-bold">
                 <a href="/api/docs" target="_blank" class="hover:text-white hover:bg-slate-100 px-3 py-1 rounded transition flex items-center gap-2 border border-emerald-500/30 text-emerald-600 bg-emerald-900/20"><i class="fa-solid fa-book"></i> API DOCS</a>
@@ -1179,7 +1199,15 @@
             "ARBITRUM": "https://cryptologos.cc/logos/arbitrum-arb-logo.png",
             "OPTIMISM": "https://cryptologos.cc/logos/optimism-ethereum-op-logo.png",
             "BASE": "https://base.org/document/favicon-32x32.png",
-            "ZKSYNC": "https://cryptologos.cc/logos/zksync-era-logo.png"
+            "ZKSYNC": "https://cryptologos.cc/logos/zksync-era-logo.png",
+            "AVALANCHE": "https://cryptologos.cc/logos/avalanche-avax-logo.png",
+            "CELO": "https://cryptologos.cc/logos/celo-celo-logo.png",
+            "LINEA": "https://raw.githubusercontent.com/Consensys/linea-monorepo/main/logo/linea-logo-black.svg",
+            "TRON": "https://cryptologos.cc/logos/tron-trx-logo.png",
+            "BITCOIN": "https://cryptologos.cc/logos/bitcoin-btc-logo.png",
+            "KASPA": "https://cryptologos.cc/logos/kaspa-kas-logo.png",
+            "STELLAR": "https://cryptologos.cc/logos/stellar-xlm-logo.png",
+            "XRP": "https://cryptologos.cc/logos/xrp-xrp-logo.png"
         };
 
         function formatAsset(valueNative, valueUsd, tokenSymbol, chainId, erc20Value = 0, erc20Symbol = null) {
@@ -1439,7 +1467,11 @@
                     
                     const graphP = fetch(`/api/node/graph?address=${encodeURIComponent(address)}`).then(async r => {
                         if (isSingleSearch) triggerLoader("Cross-Chain Graph Synthesized...");
-                        return r.json();
+                        const data = await r.json();
+                        if (data.status === 'error' || (data.data && data.data.investigation && data.data.investigation.summary && data.data.investigation.summary.includes('failed'))) {
+                            triggerLoader(`Graph API Error: ${data.message || (data.data.investigation && data.data.investigation.summary) || 'Unknown error'}`, true);
+                        }
+                        return data;
                     });
                     
                     const [init, osint, ai, graph] = await Promise.all([initP, osintP, aiP, graphP]);
@@ -1469,6 +1501,9 @@
                 
                 // Hide search modal
                 document.getElementById('initial-search-modal').style.display = 'none';
+                // Show header
+                const header = document.querySelector('header.custom-header');
+                if (header) header.style.display = 'flex';
                 
                 // Populate from cached data
                 populateFromCache(address, data);
@@ -1640,11 +1675,65 @@
             
             window.CURRENT_DATA = compositeData;
             
-            // Also need to render TX table if we have lifecycle data
             if (compositeData.raw_analysis && compositeData.raw_analysis.asset_lifecycle) {
-                if (typeof renderTxTable === 'function') {
-                    renderTxTable(compositeData.raw_analysis.asset_lifecycle);
-                }
+                const txs = compositeData.raw_analysis.asset_lifecycle;
+                let txRows = '';
+                let tab5Rows = '';
+                
+                txs.forEach((tx) => {
+                    const isOutbound = tx.from.toLowerCase() === address.toLowerCase();
+                    const cpAddr = isOutbound ? tx.to : tx.from;
+                    const cpEntity = (isOutbound ? (tx.to_cex ? 'CEX: ' + tx.to_cex : 'Wallet') : (tx.from_cex ? 'CEX: ' + tx.from_cex : 'Wallet'));
+                    const flowClass = isOutbound ? "text-red-500" : "text-emerald-500";
+                    const flowIcon = isOutbound ? "fa-arrow-up-right-from-square" : "fa-arrow-down-to-square";
+                    
+                    txRows += `
+                        <tr class="hover:bg-slate-50 transition cursor-pointer" onclick="window.open('https://etherscan.io/tx/${tx.hash}', '_blank')">
+                            <td class="text-blue-600 font-bold font-mono">
+                                <div class="flex items-center gap-2">
+                                    <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" class="w-4 h-4">
+                                    ${cpAddr.substring(0, 8)}...
+                                </div>
+                            </td>
+                            <td><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">${cpEntity}</span></td>
+                            <td class="text-center ${flowClass} font-bold"><i class="fa-solid ${flowIcon}"></i></td>
+                            <td class="text-right font-black ${flowClass}">$${tx.value_usd.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                            <td class="text-center"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold">ETH</span></td>
+                            <td class="text-center"><button class="text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-ellipsis-vertical"></i></button></td>
+                        </tr>
+                    `;
+                    
+                    tab5Rows += `
+                        <tr class="hover:bg-slate-50 transition cursor-pointer" onclick="window.open('https://etherscan.io/tx/${tx.hash}', '_blank')">
+                            <td class="text-slate-500">${tx.timestamp || 'Recent'}</td>
+                            <td class="font-bold text-slate-700">${cpEntity}</td>
+                            <td class="text-blue-600 hover:underline font-mono" title="${tx.hash || ''}">${tx.hash ? tx.hash.substring(0,10) + "..." : "0x..."}</td>
+                            <td>${tx.from ? tx.from.substring(0,10) + "..." : "-"}</td>
+                            <td>${tx.to ? tx.to.substring(0,10) + "..." : "-"}</td>
+                            <td class="font-bold text-blue-700 bg-blue-50/50">${cpEntity}</td>
+                            <td class="text-emerald-600 font-black bg-emerald-50/50">$${tx.value_usd.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                            <td class="text-[9px] font-bold text-slate-600 flex items-center h-full">Transfer</td>
+                            <td><span class="px-2 py-0.5 bg-slate-200 rounded text-slate-700">${isOutbound ? 'Outbound Flow' : 'Inbound Flow'}</span></td>
+                            <td>${address.substring(0,8)}...</td>
+                            <td class="font-bold ${isOutbound ? 'text-red-600' : 'text-emerald-600'}">99.0%</td>
+                            <td class="text-red-600 font-bold max-w-[150px] truncate" title="Trace Attribution">N/A</td>
+                            <td class="text-[10px] text-slate-600 font-bold max-w-[150px] truncate"><i class="fa-solid fa-microchip text-slate-500"></i> Trace</td>
+                        </tr>
+                    `;
+                });
+                
+                const tableEl = document.getElementById('interacted-table');
+                if (tableEl && txRows) tableEl.innerHTML = txRows;
+                else if (tableEl) tableEl.innerHTML = '<tr><td colspan="6" class="text-center text-slate-500 py-8">No interactions found.</td></tr>';
+                
+                const tab5El = document.getElementById('tab5-tx-body');
+                if (tab5El && tab5Rows) tab5El.innerHTML = tab5Rows;
+                else if (tab5El) tab5El.innerHTML = '<tr><td colspan="13" class="text-center text-slate-500 py-8">No transactions found.</td></tr>';
+                
+                const intCount = document.getElementById('interacted-count');
+                if (intCount) intCount.innerText = txs.length;
+                const tabIntCount = document.querySelector('button[onclick="switchSubTab(\\\'interacted\\\')"] span');
+                if (tabIntCount) tabIntCount.innerText = `(${txs.length})`;
             }
         }
 async function executeNemesisSearch() {
@@ -3022,11 +3111,23 @@ async function executeNemesisSearch() {
         });
 
         // Loaders
-        function triggerLoader(text = "Fusing Multi-Domain Intelligence...") {
+        function triggerLoader(text = "Fusing Multi-Domain Intelligence...", isError = false) {
             const loader = document.getElementById('global-loader');
             document.getElementById('loader-text').innerText = text;
             loader.style.display = 'flex';
             setTimeout(() => loader.style.opacity = '1', 10);
+            
+            const term = document.getElementById('floating-terminal');
+            if (term && term.style.display === 'none') term.style.display = 'flex';
+            
+            const tb = document.getElementById("terminal-body");
+            if (tb) {
+                const div = document.createElement("div");
+                div.className = isError ? "text-red-400 font-bold" : "text-emerald-400";
+                div.innerText = `[${new Date().toISOString().substring(11,19)}] ${text}`;
+                tb.appendChild(div);
+                tb.scrollTop = tb.scrollHeight;
+            }
         }
         
         function hideLoader() {
