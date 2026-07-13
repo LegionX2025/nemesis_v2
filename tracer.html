@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <title>Lionsgate Omni-Chain Forensics | Case LGN-US-2026-0172</title>
     <script>
+
+    // === MULTI-CLOUD BACKEND FAILOVER ===
+    const BACKENDS = [
+        "nemesisfinal.vercel.app", 
+        "projectnemesis.onrender.com"
+    ];
+    let currentBackendIndex = 0;
+
+    function getBackendHttpUrl(path) {
+        return `https://${BACKENDS[currentBackendIndex]}/api/${path}`;
+    }
+
+    function getBackendWsUrl(path) {
+        return `wss://${BACKENDS[currentBackendIndex]}/api/ws/${path}`;
+    }
+    // =====================================
+
     // ==========================================
     // DYNAMIC BACKEND ROUTING FOR CLOUDFLARE/LOCAL
     // ==========================================
@@ -465,6 +482,23 @@
     </div>
 
     <script>
+
+    // === MULTI-CLOUD BACKEND FAILOVER ===
+    const BACKENDS = [
+        "nemesisfinal.vercel.app", 
+        "projectnemesis.onrender.com"
+    ];
+    let currentBackendIndex = 0;
+
+    function getBackendHttpUrl(path) {
+        return `https://${BACKENDS[currentBackendIndex]}/api/${path}`;
+    }
+
+    function getBackendWsUrl(path) {
+        return `wss://${BACKENDS[currentBackendIndex]}/api/ws/${path}`;
+    }
+    // =====================================
+
         // Official Network Logos Mapping
         const NETWORK_LOGOS = {
             "ETH": "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035",
@@ -1259,6 +1293,23 @@
 </div>
 
 <script>
+
+    // === MULTI-CLOUD BACKEND FAILOVER ===
+    const BACKENDS = [
+        "nemesisfinal.vercel.app", 
+        "projectnemesis.onrender.com"
+    ];
+    let currentBackendIndex = 0;
+
+    function getBackendHttpUrl(path) {
+        return `https://${BACKENDS[currentBackendIndex]}/api/${path}`;
+    }
+
+    function getBackendWsUrl(path) {
+        return `wss://${BACKENDS[currentBackendIndex]}/api/ws/${path}`;
+    }
+    // =====================================
+
     function openNemesisIDPanel(nodeId) {
         if (!nodeId) return;
         document.getElementById('nemesis-id-iframe').src = '/nemesis_id?address=' + nodeId + '&embed=true';
