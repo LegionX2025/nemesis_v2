@@ -11,6 +11,48 @@ database_id = "7fcfec1d-362d-445b-af2a-69eac4180aed"
 binding = "NEMESIS_CACHE"
 id = "f4099ea1458e4e62ba838734f172846f"
 
+[[kv_namespaces]]
+binding = "ENTITY_CACHE"
+id = "auto-configured-during-deploy"
+
+[[kv_namespaces]]
+binding = "SESSION_CACHE"
+id = "auto-configured-during-deploy"
+
+[[kv_namespaces]]
+binding = "TOKEN_CACHE"
+id = "auto-configured-during-deploy"
+
+[[kv_namespaces]]
+binding = "OSINT_CACHE"
+id = "auto-configured-during-deploy"
+
+[[d1_databases]]
+binding = "nemesis-db"
+database_name = "nemesis-db"
+database_id = "auto-configured-during-deploy"
+
+[[d1_databases]]
+binding = "nemesis_audit_db"
+database_name = "nemesis_audit_db"
+database_id = "auto-configured-during-deploy"
+
+[[r2_buckets]]
+binding = "NEMESIS_REPORTS"
+bucket_name = "nemesis-reports"
+
+[[r2_buckets]]
+binding = "NEMESIS_EVIDENCE"
+bucket_name = "nemesis-evidence"
+
+[[r2_buckets]]
+binding = "NEMESIS_SCREENSHOTS"
+bucket_name = "nemesis-screenshots"
+
+[[r2_buckets]]
+binding = "NEMESIS_EXPORTS"
+bucket_name = "nemesis-exports"
+
 [[hyperdrive]]
 binding = "database"
 id = "2bf62864eaf64708b5a349169d6efc7e"

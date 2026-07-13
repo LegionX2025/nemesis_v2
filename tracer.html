@@ -7,28 +7,32 @@
 
     // === MULTI-CLOUD BACKEND FAILOVER ===
     const BACKENDS = [
+        "nemesis-api.your-cloudflare-worker.workers.dev", // Will be replaced by dynamic relative path if hosted on CF Pages with Service binding
         "nemesisfinal.vercel.app", 
         "projectnemesis.onrender.com"
     ];
-    let currentBackendIndex = 0;
+    window.currentBackendIndex = 0;
 
     function getBackendHttpUrl(path) {
-        return `https://${BACKENDS[currentBackendIndex]}/api/${path}`;
+        // If we are on the first backend (Cloudflare), and we are actually hosted there, we can use relative routing
+        if (window.currentBackendIndex === 0) {
+            return `/api/${path}`;
+        }
+        return `https://${BACKENDS[window.currentBackendIndex]}/api/${path}`;
     }
 
     function getBackendWsUrl(path) {
-        return `wss://${BACKENDS[currentBackendIndex]}/api/ws/${path}`;
+        if (window.currentBackendIndex === 0) {
+            let protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+            let host = window.location.host;
+            if (host.includes("127.0.0.1:") || host.includes("localhost:")) {
+                host = "127.0.0.1:8000";
+            }
+            return `${protocol}${host}/api/ws/${path}`;
+        }
+        return `wss://${BACKENDS[window.currentBackendIndex]}/api/ws/${path}`;
     }
     // =====================================
-
-    // ==========================================
-    // DYNAMIC BACKEND ROUTING FOR CLOUDFLARE/LOCAL
-    // ==========================================
-    window.BACKEND_URL = "";
-    
-    let protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-    window.WS_URL = protocol + window.location.host;
-    // ==========================================
 
         const originalWarn = console.warn;
         console.warn = function(...args) {
@@ -880,8 +884,8 @@
             });
         }
 
-        // WS connection
-        const ws = new WebSocket(window.WS_URL + '/api/ws/trace');
+        // WS connection with Auto-Rotate Fallback
+        let ws;
         let isPaused = false;
         let pendingMessages = [];
 
@@ -894,18 +898,51 @@
             }
         };
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (isPaused) {
-                pendingMessages.push(data);
-            } else {
-                processWSMessage(data);
+        function connectWS() {
+            if (window.currentBackendIndex >= BACKENDS.length) {
+                console.error("All backend connection attempts failed.");
+                addTerminalLog("CRITICAL: ALL CLOUD BACKENDS OFFLINE. TRACE HALTED.", "text-red-500 font-bold");
+                document.getElementById('status').innerHTML = '<span class="text-red-600 font-bold">Network Failure</span>';
+                document.getElementById('tx-log-loader').classList.add('hidden');
+                return;
             }
-        };
 
-        ws.onopen = function() {
-            console.log('WS Connected');
-        };
+            const url = getBackendWsUrl('trace');
+            console.log(`Attempting to connect to: ${url}`);
+            addTerminalLog(`[SYSTEM] Attempting uplink to Region-0${window.currentBackendIndex+1}...`, "text-slate-400");
+            
+            ws = new WebSocket(url);
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (isPaused) {
+                    pendingMessages.push(data);
+                } else {
+                    processWSMessage(data);
+                }
+            };
+
+            ws.onopen = function() {
+                console.log('WS Connected');
+                addTerminalLog(`[SYSTEM] Uplink Established.`, "text-emerald-400 font-bold");
+            };
+
+            ws.onerror = function(err) {
+                console.error('WS Error:', err);
+            };
+
+            ws.onclose = function(e) {
+                console.log(`WS Closed: ${e.code}. Initiating auto-rotate...`);
+                // Only rotate if we haven't successfully completed a session or if it was an abnormal closure
+                if (e.code !== 1000) {
+                    window.currentBackendIndex++;
+                    setTimeout(connectWS, 1000); // 1s delay before rotating to the next backend
+                }
+            };
+        }
+
+        // Initialize the first connection
+        connectWS();
 
         // --- BUFFER STATE ---
         let nodeBuffer = [];
@@ -1294,20 +1331,7 @@
 
 <script>
 
-    // === MULTI-CLOUD BACKEND FAILOVER ===
-    const BACKENDS = [
-        "nemesisfinal.vercel.app", 
-        "projectnemesis.onrender.com"
-    ];
-    let currentBackendIndex = 0;
-
-    function getBackendHttpUrl(path) {
-        return `https://${BACKENDS[currentBackendIndex]}/api/${path}`;
-    }
-
-    function getBackendWsUrl(path) {
-        return `wss://${BACKENDS[currentBackendIndex]}/api/ws/${path}`;
-    }
+    // (Duplicate BACKENDS block removed to prevent SyntaxError)
     // =====================================
 
     function openNemesisIDPanel(nodeId) {
