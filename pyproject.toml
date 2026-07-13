@@ -1,2 +1,8 @@
+[project]
+name = "nemesis-core"
+version = "1.0.0"
+description = "NEMESIS Backend"
+dependencies = []
+
 [tool.vercel]
 entrypoint = "nemesis_core:app"
