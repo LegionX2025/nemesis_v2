@@ -1,162 +1,126 @@
-import asyncio
-from typing import Dict, Any, List
-from gbio_ontology import GBIONode, GBIOEdge, EntityClass, TransferAction
-from protocol_registries import identify_entity
-from bitquery_collectors import run_all_collectors
-import google.generativeai as genai
 import os
+import logging
+import asyncio
+import aiohttp
+from typing import Dict, Any
 
-class EntityResolutionEngine:
-    @staticmethod
-    def resolve(edges: List[GBIOEdge], existing_nodes: Dict[str, Any] = None) -> Dict[str, Any]:
-        from gbio_ontology import BlockchainNetwork
-        nodes = existing_nodes or {}
-        for edge in edges:
-            for addr in [edge.source_node_id, edge.target_node_id]:
-                # In cross-chain scenarios, target might be DEX_POOL or similar abstractions
-                if addr == "DEX_POOL":
-                    if addr not in nodes:
-                        nodes[addr] = {"id": addr, "entity_class": "DEFI_PROTOCOL", "properties": {"name": "Liquidity Pool"}, "risk_score": 0}
-                    continue
+from services.api_rotator import rotator
+from scripts.oklink_scraper import scrape_oklink_tags
+from scripts.osint_orchestrator import aggregate_osint
+from scripts.darknet import WalletEnrichmentEngine, UIEEngine
 
-                if addr not in nodes:
-                    node = {"id": addr, "entity_class": "EOA_WALLET", "properties": {}, "risk_score": 0}
-                    entity_info = identify_entity(addr)
-                    if entity_info:
-                        node["entity_class"] = entity_info.get("entity_class", "EOA_WALLET")
-                        node["risk_score"] = entity_info.get("risk_score", 0)
-                        node["properties"]["name"] = entity_info.get("name", "")
-                        node["properties"]["category"] = entity_info.get("category", "")
-                        node["properties"]["tags"] = entity_info.get("tags", [])
-                    nodes[addr] = node
-        return nodes
-
-class RiskEngine:
-    @staticmethod
-    def score_graph(nodes: Dict[str, Any], edges: List[GBIOEdge]):
-        for edge in edges:
-            source_node = nodes.get(edge.source_node_id)
-            target_node = nodes.get(edge.target_node_id)
-            if source_node and target_node:
-                # Basic graph centrality/exposure calculation
-                if target_node.get("entity_class") in ["MIXER_ROUTER", "EntityClass.MIXER_ROUTER"]:
-                    source_node["risk_score"] = source_node.get("risk_score", 0) + target_node.get("risk_score", 0) * 0.5
-                    edge.risk_score = 90.0
-                if target_node.get("entity_class") in ["BRIDGE_ENDPOINT", "EntityClass.BRIDGE_ENDPOINT"]:
-                    # Bridging carries inherent risk of obfuscation
-                    edge.risk_score = max(edge.risk_score, 40.0)
-
-class TemporalAnalysis:
-    @staticmethod
-    def analyze(edges: List[GBIOEdge]) -> List[GBIOEdge]:
-        # Sort edges by timestamp if available
-        return edges
-
-class AIInvestigationLayer:
-    @staticmethod
-    async def analyze(target: str, nodes: Dict[str, GBIONode], edges: List[GBIOEdge]) -> Dict[str, Any]:
-        api_keys_str = os.environ.get("GEMINI_API_KEYS", "")
-        keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
-        if not keys:
-            return {"summary": "AI disabled. Missing GEMINI_API_KEYS."}
-        
-        graph_summary = f"Target: {target}\n"
-        for edge in edges[:50]:
-            s_node = nodes[edge.source_node_id]
-            t_node = nodes[edge.target_node_id]
-            s_name = s_node.get("properties", {}).get("name", edge.source_node_id)
-            t_name = t_node.get("properties", {}).get("name", edge.target_node_id)
-            amount = str(edge.amount_native)
-            curr = edge.asset_symbol
-            s_class = s_node.get("entity_class", "UNKNOWN")
-            t_class = t_node.get("entity_class", "UNKNOWN")
-            if amount:
-                graph_summary += f"{s_name} ({s_class}) --[{edge.action.value} {amount} {curr}]--> {t_name} ({t_class})\n"
-            else:
-                graph_summary += f"{s_name} ({s_class}) --[{edge.action.value}]--> {t_name} ({t_class})\n"
-            
-        prompt = f"""
-        You are an elite blockchain forensic investigator. Analyze the following Omni-Directional Knowledge Graph traversal for {target}.
-        This graph includes advanced cross-chain asset movements, DEX swaps, and Bridge interactions.
-        
-        Provide a chronological narrative of the asset movement, obfuscation techniques used, and overall AML risk. 
-        Focus on entities like Exchanges, Mixers, and Bridges. Output your response as plain text or markdown.
-        
-        Graph Traversal:
-        {graph_summary}
-        """
-        last_error = ""
-        for key in keys:
-            try:
-                genai.configure(api_key=key)
-                model = genai.GenerativeModel('gemini-2.5-flash')
-                response = await asyncio.to_thread(model.generate_content, prompt)
-                return {"summary": response.text}
-            except Exception as e:
-                last_error = str(e)
-                if "429" in last_error or "quota" in last_error.lower():
-                    continue # Rotate to next key
-                else:
-                    break # Other errors like invalid key format might break, but let's try next key anyway just in case
-                    
-        return {"summary": f"AI analysis failed across all {len(keys)} keys. Last Error: {last_error}"}
+logger = logging.getLogger("NEMESIS_INTELLIGENCE")
 
 class IntelligencePipeline:
-    @staticmethod
-    async def run(target_address: str, initial_chain: str = "Ethereum", max_depth: int = 2) -> Dict[str, Any]:
-        print(f"--- NEMESIS OMEGA: KNOWLEDGE GRAPH INIT ({target_address}) ---")
-        
-        all_edges = []
-        visited_nodes = set()
-        queue = [(target_address, initial_chain, 0)]
-        
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
-            # Cross-Chain Spawning loop
-            while queue:
-                current_addr, current_chain, depth = queue.pop(0)
-                if depth >= max_depth or current_addr in visited_nodes:
-                    continue
-                    
-                visited_nodes.add(current_addr)
-                print(f"[Depth {depth}] Spawning Multi-Chain Collectors for {current_addr} on {current_chain}")
-                
-                raw_edges = await run_all_collectors(session, current_addr, current_chain)
-                all_edges.extend(raw_edges)
-                
-                # Follow the asset: If it was bridged or swapped, queue the destination
-                for edge in raw_edges:
-                    if edge.action == TransferAction.BRIDGED_TO:
-                        # In a real implementation, we extract the destination chain/address from Bitquery Event Logs
-                        # For this PoC architecture, we queue the bridge contract itself or a simulated destination
-                        target = edge.target_node_id
-                        if target not in visited_nodes:
-                            print(f"  -> Cross-Chain recursion detected. Spawning tracker for bridge: {target}")
-                            queue.append((target, "Arbitrum", depth + 1))  # Example multi-chain hop
+    """
+    Enterprise Unified Intelligence Pipeline.
+    Aggregates multi-domain intelligence from Graph, AI, OSINT engines, and Darknet.
+    """
+    @classmethod
+    async def query_cached_intel(cls, address: str) -> Dict[str, Any]:
+        """Queries MongoDB/Neo4J/CF for existing intelligence on this address."""
+        try:
+            from pymongo import MongoClient
+            MONGO_URI = os.getenv("DATABASE_MONGO_URL", os.getenv("VITE_DATABASE_MONGO_URL", "mongodb://localhost:27017"))
+            client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2000)
+            db = client["blockchain_intel"]
+            doc = db["entities"].find_one({"$or": [{"address": address}, {"addresses": address}]})
+            if doc:
+                return doc
+        except Exception as e:
+            logger.warning(f"Failed to query MongoDB cache: {e}")
+        return None
 
-        print("\n[Ontology Translation & Entity Resolution]")
-        nodes_map = EntityResolutionEngine.resolve(all_edges)
+    @classmethod
+    async def run(cls, address: str, max_depth: int = 1) -> Dict[str, Any]:
+        """Runs the intelligence pipeline for a specific address in parallel."""
+        logger.info(f"Extracting Multi-Domain Intelligence for {address}...")
         
-        print("[Risk Engine Scoring]")
-        RiskEngine.score_graph(nodes_map, all_edges)
+        # 1. Fast Cache Query (MongoDB / D1)
+        cached_data = await asyncio.to_thread(cls.query_cached_intel, address)
+        if cached_data:
+            logger.info(f"Cache hit for {address} in MongoDB.")
         
-        print("[Temporal Analysis]")
-        ordered_edges = TemporalAnalysis.analyze(all_edges)
+        # 2. Parallel Task Execution for OSINT, On-Chain Labeling, and Darknet Enrichment
+        oklink_task = asyncio.create_task(scrape_oklink_tags("eth", address))
+        osint_task = asyncio.create_task(aggregate_osint("Unknown", "CRYPTO_WALLET", address, "ETHEREUM"))
         
-        print("[AI Investigation Layer]")
-        ai_report = await AIInvestigationLayer.analyze(target_address, nodes_map, ordered_edges)
+        # Live Darknet Enrichment
+        darknet_task = asyncio.create_task(WalletEnrichmentEngine().enrich_wallet_data(address))
         
-        print(f"--- NEMESIS OMEGA: ANALYSIS COMPLETE ---")
+        # Wait for all intelligence gathers
+        oklink_data, osint_data, darknet_data = await asyncio.gather(
+            oklink_task, osint_task, darknet_task, return_exceptions=True
+        )
+        
+        # Safe unwrap if exceptions occurred during gather
+        if isinstance(oklink_data, Exception) or not oklink_data:
+            oklink_data = {"attributionTags": ["Unresolved"]}
+        if isinstance(osint_data, Exception) or not osint_data:
+            osint_data = {
+                "entity_name": "Unknown Entity",
+                "scores": {"threat": 0, "trust": 0},
+                "negative_news": [],
+                "crunchbase_summary": "",
+                "logo": ""
+            }
+        if isinstance(darknet_data, Exception) or not darknet_data:
+            darknet_data = {"threat_level": "Unknown", "darknet_mentions": 0}
+
+        # Build Entity Data using OSINT as base and Oklink for tags
+        tags = oklink_data.get("attributionTags", [])
+        if cached_data and cached_data.get("tags"):
+            tags.extend(cached_data.get("tags"))
+            tags = list(set(tags)) # Deduplicate
+            
+        # Determine entity class
+        entity_class = "EOA_WALLET"
+        if any(tag.lower() in ["contract", "token", "dex", "router", "exchange"] for tag in tags):
+            entity_class = "SMART_CONTRACT"
+
+        entity_name = osint_data.get("entity_name")
+        if not entity_name or entity_name == "Unknown Entity":
+            if cached_data and cached_data.get("name"):
+                entity_name = cached_data.get("name")
+            elif tags and tags[0] != "Unresolved":
+                entity_name = tags[0].title()
+            else:
+                entity_name = "Unknown Entity"
+                
+        # Merge threat scores from Darknet and OSINT
+        risk_score = osint_data.get("scores", {}).get("threat", 15)
+        if darknet_data.get("darknet_mentions", 0) > 0:
+            risk_score = max(risk_score, 85)
+
+        logo = osint_data.get("logo", "")
+        if cached_data and cached_data.get("logo"):
+            logo = cached_data.get("logo")
+
+        # Prepare the response for the UI
         return {
-            "target": target_address,
-            "chain": initial_chain,
-            "nodes": [n for n in nodes_map.values()],
-            "edges": [e.dict() if hasattr(e, "dict") else e.model_dump() if hasattr(e, "model_dump") else e.__dict__ for e in ordered_edges],
-            "investigation": ai_report
+            "address": address,
+            "chain": "ETHEREUM",  # Can be parameterized
+            "nodes": [
+                {
+                    "id": address,
+                    "label": entity_name if entity_name != "Unknown Entity" else address, # Do not redact if known
+                    "group": entity_class,
+                    "title": f"Address: {address}<br>Entity: {entity_name}<br>Tags: {', '.join(tags)}<br>Threat: {risk_score}",
+                    "logo": logo,
+                    "entity_class": entity_class,
+                    "risk_score": risk_score,
+                    "properties": {
+                        "name": entity_name,
+                        "tags": tags,
+                        "osint_summary": osint_data.get("crunchbase_summary", ""),
+                        "negative_news": osint_data.get("negative_news", []),
+                        "darknet_intel": darknet_data
+                    }
+                }
+            ],
+            "edges": [], # Edges are populated by the trace endpoint, not the dossier init
+            "metadata": {
+                "confidence": 0.85 if cached_data else 0.60,
+                "sources": ["osint", "oklink", "playwright", "darknet", "mongodb"]
+            }
         }
-
-if __name__ == "__main__":
-    async def test():
-        res = await IntelligencePipeline.run("0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b")
-        print(res["investigation"]["summary"])
-    asyncio.run(test())

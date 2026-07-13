@@ -5,6 +5,7 @@ WORKDIR /app
 # Install dependencies
 COPY requirements_docker.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN playwright install chromium --with-deps
 
 # Copy the source code
 COPY . /app

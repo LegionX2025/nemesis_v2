@@ -10,3 +10,15 @@ database_id = "7fcfec1d-362d-445b-af2a-69eac4180aed"
 [[kv_namespaces]]
 binding = "NEMESIS_CACHE"
 id = "f4099ea1458e4e62ba838734f172846f"
+
+[[hyperdrive]]
+binding = "database"
+id = "2bf62864eaf64708b5a349169d6efc7e"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Bind the Pages frontend to the Python backend Worker
+[[services]]
+binding = "BACKEND"
+service = "nemesis-api"

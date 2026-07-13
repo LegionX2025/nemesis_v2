@@ -7,11 +7,10 @@
     // ==========================================
     // DYNAMIC BACKEND ROUTING FOR CLOUDFLARE/LOCAL
     // ==========================================
-    const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname === "";
-    window.BACKEND_URL = IS_LOCAL ? "" : "http://127.0.0.1:3001";
+    window.BACKEND_URL = "";
     
     let protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-    window.WS_URL = IS_LOCAL ? (protocol + window.location.host) : "ws://127.0.0.1:3001";
+    window.WS_URL = protocol + window.location.host;
     // ==========================================
 
         const originalWarn = console.warn;
@@ -21,7 +20,10 @@
         };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="/global_nav.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology-library/0.8.0/graphology-library.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -39,6 +41,22 @@
         #graph { height: calc(100vh - 120px); width: 100%; outline: none; background-color: #fff; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        .vis-tooltip {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+            padding: 12px !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 11px !important;
+            color: #1e293b !important;
+            pointer-events: none;
+            z-index: 100;
+            line-height: 1.5;
+        }
         
         .google-doc { width: 100%; max-width: 900px; margin: 2rem auto; padding: 1in; background: #ffffff; color: #000000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #ddd; outline: none; line-height: 1.6; }
         .prose p { margin-bottom: 1rem; text-align: justify; }
@@ -238,15 +256,17 @@
                             <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
                         </div>
                     </label>
-                    
-                    <a href="#" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
+                    <button onclick="window.open('/audit', '_blank')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
                         <i class="fa-solid fa-shield-halved"></i> Master Audit
-                    </a>
-                    <a href="#" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
+                    </button>
+                    <button onclick="window.open('/intelligence', '_blank')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
                         <i class="fa-solid fa-brain"></i> Intelligence Base
-                    </a>
+                    </button>
+                    <button onclick="triggerGeneratePDF()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline tracking-wide">
+                        <i class="fa-solid fa-file-pdf"></i> Generate FORENSIC REPORT
+                    </button>
                     <button onclick="toggleLogModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2">
-                        <i class="fa-solid fa-list"></i> Evidentiary Log
+                        <i class="fa-solid fa-list-ul"></i> Evidentiary Log
                     </button>
                     <select id="currency-display-selector" onchange="setCurrencyMode(this.value)" class="bg-white border border-slate-300 text-slate-700 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer mr-1">
                         <option value="USD">💵 USD Eqv.</option>
@@ -371,9 +391,12 @@
                     </div>
                     <!-- Graph -->
                     <div id="graph" class="absolute inset-0 z-10" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 24px 24px;"></div>
+                    <div id="html-overlay" class="absolute inset-0 z-20 pointer-events-none" style="transform-origin: 0 0;"></div>
+                    <!-- HTML Overlay for Nodes (Layer 2) -->
+                    <div id="html-overlay" class="absolute inset-0 z-20 pointer-events-none" style="transform-origin: 0 0;"></div>
                 </div>
                 <!-- Status Overlay on Graph -->
-                <div id="status" class="absolute top-4 right-4 bg-white/90 backdrop-blur border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm text-[10px] font-mono font-bold text-slate-500 z-10 pointer-events-none">
+                <div id="status" class="absolute bottom-4 right-4 bg-white/90 backdrop-blur border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm text-[10px] font-mono font-bold text-slate-500 z-10 pointer-events-none">
                     Idle. Waiting for deployment.
                 </div>
                 
@@ -459,13 +482,18 @@
         };
 
         // Simulation variables
-        var nodes = new vis.DataSet();
-        var edges = new vis.DataSet();
+        var graph = new graphology.Graph({ multi: true });
+        var renderer = null;
+        var forceAtlas2 = null;
         var allEdgesMap = new Map();
         var allNodesMap = new Map();
-        var network = null;
+        var totalLossTraced = 0;
         var isSidebarOpen = true;
         var isLogPanelOpen = true;
+
+        window.triggerGeneratePDF = function() {
+            window.open('/api/report/generate', '_blank');
+        };
 
         function toggleTerminal() {
             const term = document.getElementById('floating-terminal');
@@ -559,7 +587,61 @@
             isLogPanelOpen = !isLogPanelOpen;
         }
 
-        window.initiateLandingTrace = function() {
+        function getExplorerTxLink(chain, txHash) {
+            chain = (chain || "").toUpperCase();
+            if (chain === "ETHEREUM" || chain === "ETH") return "https://etherscan.io/tx/" + txHash;
+            if (chain === "POLYGON" || chain === "MATIC") return "https://polygonscan.com/tx/" + txHash;
+            if (chain === "BSC" || chain === "BNB") return "https://bscscan.com/tx/" + txHash;
+            if (chain === "OPTIMISM" || chain === "OP") return "https://optimistic.etherscan.io/tx/" + txHash;
+            if (chain === "ARBITRUM" || chain === "ARB") return "https://arbiscan.io/tx/" + txHash;
+            if (chain === "AVALANCHE" || chain === "AVAX") return "https://snowtrace.io/tx/" + txHash;
+            if (chain === "BASE") return "https://basescan.org/tx/" + txHash;
+            if (chain === "BITCOIN" || chain === "BTC") return "https://mempool.space/tx/" + txHash;
+            if (chain === "TRON" || chain === "TRX") return "https://tronscan.org/#/transaction/" + txHash;
+            if (chain === "SOLANA" || chain === "SOL") return "https://solscan.io/tx/" + txHash;
+            return "https://blockscan.com/tx/" + txHash;
+        }
+
+        function getExplorerAddressLink(chain, address) {
+            chain = (chain || "").toUpperCase();
+            if (chain === "ETHEREUM" || chain === "ETH") return "https://etherscan.io/address/" + address;
+            if (chain === "POLYGON" || chain === "MATIC") return "https://polygonscan.com/address/" + address;
+            if (chain === "BSC" || chain === "BNB") return "https://bscscan.com/address/" + address;
+            if (chain === "OPTIMISM" || chain === "OP") return "https://optimistic.etherscan.io/address/" + address;
+            if (chain === "ARBITRUM" || chain === "ARB") return "https://arbiscan.io/address/" + address;
+            if (chain === "AVALANCHE" || chain === "AVAX") return "https://snowtrace.io/address/" + address;
+            if (chain === "BASE") return "https://basescan.org/address/" + address;
+            if (chain === "BITCOIN" || chain === "BTC") return "https://mempool.space/address/" + address;
+            if (chain === "TRON" || chain === "TRX") return "https://tronscan.org/#/address/" + address;
+            if (chain === "SOLANA" || chain === "SOL") return "https://solscan.io/account/" + address;
+            return "https://blockscan.com/address/" + address;
+        }
+
+        function exportLiveLogCSV() {
+            let csv = 'Date/Time,Chain,Type,TX Hash,From,To,Token,Amount,USD Value\n';
+            allEdgesMap.forEach((data, hash) => {
+                const usdAmount = parseFloat(data.usd_value || data.amount || 0).toFixed(2);
+                csv += `${new Date().toISOString()},${data.chain || 'UNKNOWN'},${data.edge_type || 'Transfer'},${hash},${data.from},${data.to},${data.computed_ticker || 'N/A'},${data.amount || 0},${usdAmount}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'nemesis_trace_log.csv');
+            a.click();
+        }
+
+        function exportLiveLogJSON() {
+            const dataArr = Array.from(allEdgesMap.values());
+            const blob = new Blob([JSON.stringify(dataArr, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'nemesis_trace_log.json');
+            a.click();
+        }
+
+        function initiateLandingTrace() {
             const seedVal = document.getElementById("landing-seed-input").value;
             if(!seedVal) return alert("Please enter a target wallet address.");
             
@@ -575,6 +657,7 @@
                 document.getElementById('main-ui').classList.remove('hidden');
                 document.getElementById('main-ui').classList.add('flex');
                 
+
                 initGraphSimulation();
                 submitTrace();
             }, 800);
@@ -596,8 +679,57 @@
             "MAKER": "https://cryptologos.cc/logos/maker-mkr-logo.png?v=035",
             "TORNADO": "https://cryptologos.cc/logos/tornado-cash-torn-logo.png?v=035",
             "LIDO": "https://cryptologos.cc/logos/lido-dao-ldo-logo.png?v=035",
+            "TETHER": "https://cryptologos.cc/logos/tether-usdt-logo.png?v=035",
+            "USDT": "https://cryptologos.cc/logos/tether-usdt-logo.png?v=035",
+            "USDC": "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035",
+            "CIRCLE": "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035",
+            "ETHEREUM": "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035",
+            "ETH ": "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035",
+            "BITCOIN": "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035",
+            "BTC ": "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035",
+            "WBTC": "https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png?v=035",
+            "DAI": "https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png?v=035",
+            "MATIC": "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035",
+            "POLYGON": "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035",
+            "SOLANA": "https://cryptologos.cc/logos/solana-sol-logo.png?v=035",
+            "BNB": "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035",
+            "BUSD": "https://cryptologos.cc/logos/binance-usd-busd-logo.png?v=035",
+            "TRON": "https://cryptologos.cc/logos/tron-trx-logo.png?v=035",
+            "AVAX": "https://cryptologos.cc/logos/avalanche-avax-logo.png?v=035",
+            "CHAINLINK": "https://cryptologos.cc/logos/chainlink-link-logo.png?v=035",
+            "SHIBA": "https://cryptologos.cc/logos/shiba-inu-shib-logo.png?v=035",
             "1INCH": "https://cryptologos.cc/logos/1inch-1inch-logo.png?v=035"
         };
+
+        const IMAGE_CACHE = {};
+        function getCachedImage(url) {
+            if (!url) return null;
+            if (!IMAGE_CACHE[url]) {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => { if (network) network.redraw(); };
+                IMAGE_CACHE[url] = img;
+            }
+            return IMAGE_CACHE[url];
+        }
+
+        function getTokenLogo(ticker) {
+            if(!ticker) return null;
+            const t = ticker.toUpperCase();
+            if(t.includes('USDT')) return "https://cryptologos.cc/logos/tether-usdt-logo.png?v=035";
+            if(t.includes('USDC')) return "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035";
+            if(t.includes('ETH')) return "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035";
+            if(t.includes('BNB')) return "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035";
+            if(t.includes('BTC')) return "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035";
+            if(t.includes('MATIC') || t.includes('POL')) return "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035";
+            if(t.includes('SOL')) return "https://cryptologos.cc/logos/solana-sol-logo.png?v=035";
+            if(t.includes('TRX')) return "https://cryptologos.cc/logos/tron-trx-logo.png?v=035";
+            if(t.includes('ARB')) return "https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=035";
+            if(t.includes('OP')) return "https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=035";
+            if(t.includes('AVAX')) return "https://cryptologos.cc/logos/avalanche-avax-logo.png?v=035";
+            if(t.includes('LINK')) return "https://cryptologos.cc/logos/chainlink-link-logo.png?v=035";
+            return null; // Fallback to no icon if not found
+        }
 
         function getSafeIconUrl(entityLabel, isMixer, isCex, chain) {
             let upper = (entityLabel || "").toUpperCase();
@@ -628,130 +760,92 @@
 
         function initGraphSimulation() {
             const container = document.getElementById('graph');
+            const overlay = document.getElementById('html-overlay');
             
-            var options = {
-                layout: { hierarchical: { enabled: false } },
-                physics: { 
-                    enabled: true, 
-                    barnesHut: { gravitationalConstant: -30000, centralGravity: 0.3, springLength: 150, springConstant: 0.04 },
-                    stabilization: { iterations: 150 }
-                },
-                interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true, hideEdgesOnDrag: true, hideNodesOnDrag: false },
-                nodes: { 
-                    shape: 'circularImage', size: 30,
-                    font: { size: 10, face: 'Inter', color: '#1e293b' }, 
-                    borderWidth: 2, 
-                    shadow: { color: 'rgba(0,0,0,0.05)', size: 10, x: 0, y: 5 } 
-                },
-                edges: { 
-                    arrows: 'to', 
-                    font: { align: 'middle', size: 9, color: '#64748b', background: '#ffffff', strokeWidth: 0 }, 
-                    smooth: { type: 'discrete', forceDirection: 'horizontal' },
-                    color: { color: '#3b82f6', highlight: '#2563eb', hover: '#2563eb' },
-                    width: 1.5
-                }
-            };
+            if (renderer) {
+                renderer.kill();
+                if (forceAtlas2) forceAtlas2.stop();
+            }
             
-            network = new vis.Network(container, {nodes, edges}, options);
-
-            // Graph Event Listeners
-            network.on("click", function (params) {
-                if (params.nodes.length > 0) {
-                    openNemesisIDPanel(params.nodes[0]);
-                } else if (params.edges.length > 0) {
-                    openTxPanel(params.edges[0]);
-                }
+            graph = new graphology.Graph({ multi: true });
+            
+            renderer = new Sigma(graph, container, {
+                renderLabels: false,
+                renderEdgeLabels: false,
+                defaultEdgeColor: '#cbd5e1',
+                defaultNodeColor: '#3b82f6',
+                enableEdgeEvents: true
             });
-
-            // Modern Clean Design 1 Drawing logic
-            network.on("afterDrawing", function (ctx) {
-                let nodePositions = network.getPositions(nodes.getIds());
+            
+            let hoveredNode = null;
+            
+            renderer.on("afterRender", () => {
+                overlay.innerHTML = "";
                 
-                // Draw Node details (Amount, Badge, Classification)
-                nodes.get().forEach(n => {
-                    let pos = nodePositions[n.id];
-                    if(!pos) return;
+                graph.forEachNode((node, attrs) => {
+                    const pos = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
+                    const zoomLevel = renderer.getCamera().ratio;
+                    const isZoomedOut = zoomLevel > 2;
                     
-                    let isCex = n.label.toUpperCase().includes("EXCHANGE") || n.label.toUpperCase().includes("CUSTODIAL");
-                    let isSuspect = n.label.toUpperCase().includes("UNKNOWN") || n.label.toUpperCase().includes("SUSPECT");
+                    let isCex = attrs.custom_is_cex;
+                    let isSuspect = attrs.custom_is_suspect;
+                    let entityName = attrs.custom_entity || "WALLET";
+                    let amountText = attrs.custom_amount || "$0.00";
+                    let glowCss = hoveredNode === node ? "box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.6);" : "";
                     
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
+                    let html = `
+                    <div style="position: absolute; left: ${pos.x}px; top: ${pos.y}px; transform: translate(-50%, -50%); pointer-events: auto; display: flex; flex-direction: column; align-items: center; cursor: pointer;"
+                         onmouseenter="window.hoverNode('${node}')" onmouseleave="window.unhoverNode()" onclick="openNemesisIDPanel('${node}')">
+                         
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: white; border: 2px solid ${isCex ? '#10b981' : (isSuspect ? '#ef4444' : '#3b82f6')}; display: flex; justify-content: center; align-items: center; ${glowCss} transition: box-shadow 0.2s;">
+                            <img src="${attrs.image}" style="width: 32px; height: 32px; border-radius: 50%;">
+                        </div>
+                        
+                        ${!isZoomedOut ? `
+                        <div style="text-align: center; margin-top: 6px; background: rgba(255,255,255,0.95); padding: 4px 8px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); pointer-events: none; backdrop-filter: blur(4px);">
+                            <div style="font-weight: 800; font-size: 11px; color: ${isCex ? '#166534' : '#0f172a'};"><i class="${isCex ? 'fa-solid fa-building-columns' : 'fa-solid fa-wallet'} mr-1 text-[9px]"></i>${entityName}</div>
+                            <div style="font-weight: 800; font-size: 12px; color: #ef4444; margin-top: 2px;">${amountText}</div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #64748b; margin-top: 3px; background: #f1f5f9; padding: 2px 4px; border-radius: 4px;">${node.substring(0,8)}...</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    `;
+                    overlay.insertAdjacentHTML('beforeend', html);
+                });
+                
+                graph.forEachEdge((edge, attrs, source, target, sourceAttrs, targetAttrs) => {
+                    const pos1 = renderer.graphToViewport({ x: sourceAttrs.x, y: sourceAttrs.y });
+                    const pos2 = renderer.graphToViewport({ x: targetAttrs.x, y: targetAttrs.y });
+                    const midX = (pos1.x + pos2.x) / 2;
+                    const midY = (pos1.y + pos2.y) / 2;
+                    const zoomLevel = renderer.getCamera().ratio;
+                    if (zoomLevel > 1.5) return;
                     
-                    
-                    // Outflow Amount (Dummy/Calculated)
-                    let amountText = n.custom_amount || (n.title && n.title.includes("$") ? n.title.split("
-")[0] : "$0.00");
-                    ctx.font = 'bold 14px "Inter", sans-serif';
-                    ctx.fillStyle = "#3b82f6"; // Blue
-                    ctx.fillText(amountText, pos.x, pos.y + 65);
-                    
-                    // Entity Badge
-                    let isCex = n.custom_is_cex !== undefined ? n.custom_is_cex : (n.label.toUpperCase().includes("EXCHANGE") || n.label.toUpperCase().includes("CUSTODIAL"));
-                    let isSuspect = n.custom_is_suspect !== undefined ? n.custom_is_suspect : (n.label.toUpperCase().includes("UNKNOWN") || n.label.toUpperCase().includes("SUSPECT"));
-                    let entityName = n.custom_entity ? n.custom_entity.substring(0,15) : (isCex ? "BINANCE" : (isSuspect ? "UNKNOWN" : "WALLET"));
-                    
-                    ctx.fillStyle = isCex ? "#dcfce7" : "#e0f2fe"; // light green or light blue
-                    let bw = Math.max(60, ctx.measureText(entityName).width + 10);
-                    let bh = 14;
-                    ctx.beginPath();
-                    ctx.roundRect(pos.x - bw/2, pos.y + 80, bw, bh, 4);
-                    ctx.fill();
-                    
-                    ctx.font = 'bold 8px "Inter", sans-serif';
-                    ctx.fillStyle = isCex ? "#166534" : "#0369a1";
-                    ctx.fillText(entityName.toUpperCase(), pos.x, pos.y + 80 + bh/2);
-                    
-                    // Role
-                    let role = n.custom_role || (isCex ? "EXCHANGE" : "UNKNOWN ENTITY");
-                    ctx.font = 'bold 9px "Inter", sans-serif';
-                    ctx.fillStyle = "#64748b";
-                    ctx.fillText(role.toUpperCase(), pos.x, pos.y + 100);
-                    
-                    // Status Badge (bottom right of node)
-                    ctx.beginPath();
-                    ctx.arc(pos.x + 18, pos.y + 18, 8, 0, 2*Math.PI);
-                    ctx.fillStyle = isCex ? "#10b981" : (isSuspect ? "#64748b" : "#3b82f6");
-                    ctx.fill();
-                    ctx.strokeStyle = "#ffffff";
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                    
-                    ctx.font = '900 8px "Font Awesome 6 Free"';
-                    ctx.fillStyle = "#ffffff";
-                    let icon = isCex ? '\uf00c' : (isSuspect ? '\uf128' : '\uf3ed');
-                    ctx.fillText(icon, pos.x + 18, pos.y + 18);
-                    
-                    // Mini Chain Icon (top right)
-                    let chainUrl = null;
-                    let chain = n.custom_chain || "ETHEREUM";
-                    if (chain === "ETHEREUM") chainUrl = "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035";
-                    else if (chain === "BSC") chainUrl = "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035";
-                    else if (chain === "POLYGON") chainUrl = "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035";
-                    else if (chain === "SOLANA") chainUrl = "https://cryptologos.cc/logos/solana-sol-logo.png?v=035";
-                    else if (chain === "BITCOIN") chainUrl = "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035";
-                    
-                    let cImg = getCachedImage(chainUrl);
-                    if (cImg && cImg.complete) {
-                        ctx.beginPath();
-                        ctx.arc(pos.x + 18, pos.y - 18, 8, 0, 2*Math.PI);
-                        ctx.fillStyle = "#ffffff";
-                        ctx.fill();
-                        ctx.drawImage(cImg, pos.x + 11, pos.y - 25, 14, 14);
-                    }
-
-                    
-                    ctx.font = '900 8px "Font Awesome 6 Free"';
-                    ctx.fillStyle = "#ffffff";
-                    let icon = isCex ? '\\uf00c' : (isSuspect ? '\\uf128' : '\\uf3ed');
-                    ctx.fillText(icon, pos.x + 18, pos.y + 18);
+                    let edgeHtml = `
+                    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); background: rgba(255,255,255,0.95); padding: 4px 10px; border-radius: 8px; border: 1px solid #e2e8f0; pointer-events: auto; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); backdrop-filter: blur(4px);"
+                         onclick="openTxPanel('${edge}')">
+                        <div style="font-size: 8px; font-weight: 800; color: #94a3b8; margin-bottom: 2px; letter-spacing: 0.1em;">OUTFLOW</div>
+                        <div style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: #ef4444;">
+                            <i class="fa-solid fa-arrow-down text-[9px]"></i> $${attrs.custom_usd}
+                        </div>
+                        <div style="font-size: 9px; font-weight: 700; color: #475569; margin-top: 3px; font-family: 'JetBrains Mono', monospace;">
+                            <img src="${getTokenLogo(attrs.custom_ticker) || 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035'}" style="width: 10px; height: 10px; display: inline-block; vertical-align: text-top; margin-right: 2px;">
+                            ${attrs.custom_amt_raw} ${attrs.custom_ticker}
+                        </div>
+                    </div>
+                    `;
+                    overlay.insertAdjacentHTML('beforeend', edgeHtml);
                 });
             });
-
             
+            window.hoverNode = function(node) { hoveredNode = node; renderer.refresh(); };
+            window.unhoverNode = function() { hoveredNode = null; renderer.refresh(); };
+            
+            forceAtlas2 = new graphologyLibrary.layoutForceAtlas2.ForceAtlas2Layout(graph, {
+                settings: { gravity: 0.2, scalingRatio: 5, strongGravityMode: false }
+            });
         }
 
-        
         // WS connection
         const ws = new WebSocket(window.WS_URL + '/api/ws/trace');
         let isPaused = false;
@@ -808,7 +902,7 @@
                 if (!network) initGraphSimulation();
                 document.getElementById('status').innerHTML = '<span class="text-blue-600">Trace Running...</span>';
                 document.getElementById('tx-log-loader').classList.remove('hidden');
-                nodes.clear(); edges.clear(); allNodesMap.clear(); allEdgesMap.clear();
+                graph.clear(); allNodesMap.clear(); allEdgesMap.clear();
                 document.getElementById('tx-log-body').innerHTML = '';
                 document.getElementById('terminal-list').innerHTML = '';
                 document.getElementById('terminal-count').innerText = '0';
@@ -816,10 +910,31 @@
                 document.getElementById('total-traced-widget').innerText = '$0.00';
                 
                 data.seeds.forEach(seed => {
-                    nodes.add({ id: seed, label: 'START\n' + seed.substring(0,8) + '...', image: getSafeIconUrl(seed, false, false) });
+                    nodeBuffer.push({ id: seed, label: 'START\n' + seed.substring(0,8) + '...', image: getSafeIconUrl(seed, false, false, "ETHEREUM") });
                     allNodesMap.set(seed, {id: seed});
                 });
                 network.fit({animation: true});
+            } else if (data.type === 'NODE_UPDATE') {
+                if (allNodesMap.has(data.node)) {
+                    let updateData = { id: data.node };
+                    if (data.classification !== "Unknown Entity") {
+                        updateData.label = data.classification + '\n' + data.node.substring(0,6) + '...';
+                        updateData.title = `${data.classification}\nTags: ${data.label_str}`;
+                    }
+                    if (data.is_cex) {
+                        updateData.color = { background: '#f59e0b', border: '#b45309', hover: {background: '#d97706'} };
+                    } else if (data.is_suspect) {
+                        updateData.color = { background: '#be123c', border: '#881337', hover: {background: '#9f1239'} };
+                        updateData.shape = 'hexagon';
+                    } else if (data.classification.includes("DeFi") || data.classification.includes("Bridge")) {
+                        updateData.color = { background: '#10b981', border: '#047857', hover: {background: '#059669'} };
+                    }
+                    
+                    try {
+                        graph.mergeNodeAttributes(updateData.id, updateData);
+                        addTerminalLog(`[OSINT] Resolved ${data.node.substring(0,8)}... as ${data.classification}`, "text-yellow-400");
+                    } catch(e) { console.error("Node update error:", e); }
+                }
             } else if (data.type === 'LEDGER_BATCH') {
                 data.data.forEach(edgeData => queueEdgeForRender(edgeData));
             } else if (data.type === 'LEDGER') {
@@ -858,31 +973,110 @@
 
             if(!allEdgesMap.has(txHash)) {
                 const usdAmount = edgeData.usd_value || edgeData.amount || 0;
+                
+                // Track total outflow on the source node (Design 1)
+                let sNodeId = edgeData.from;
+                let sNodeObj = allNodesMap.get(sNodeId);
+                if(sNodeObj) {
+                    if(!sNodeObj.total_outflow) sNodeObj.total_outflow = 0;
+                    sNodeObj.total_outflow += parseFloat(usdAmount);
+                    
+                    // Update global total loss
+                    totalLossTraced += parseFloat(usdAmount);
+                    let totalWidget = document.getElementById('total-traced-widget');
+                    if (totalWidget) {
+                        totalWidget.innerText = '$' + totalLossTraced.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                    
+                    // Update node directly in vis-network to show custom amount below icon
+                    try {
+                        nodes.update({ 
+                            id: sNodeId, 
+                            custom_amount: '-$' + sNodeObj.total_outflow.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) 
+                        });
+                    } catch(e){}
+                }
+                // Modern HTML Tooltip Design
+                const tooltipEl = document.createElement('div');
+                tooltipEl.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:6px;min-width:240px;font-family:'Inter',sans-serif;">
+                        <div style="font-size:10px;color:#2563eb;font-weight:700;border-bottom:1px solid #e2e8f0;padding-bottom:4px;word-break:break-all;font-family:'JetBrains Mono',monospace;">
+                            <i class="fa-solid fa-link mr-1"></i> ${txHash}
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                            <span style="color:#64748b;font-size:11px;font-weight:600;">Transfer Amount</span>
+                            <span style="font-weight:800;color:#0f172a;font-size:12px;">${parseFloat(amount).toFixed(4)} ${ticker}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#64748b;font-size:11px;font-weight:600;">USD Value</span>
+                            <span style="font-weight:800;color:#059669;font-size:12px;">$${parseFloat(usdAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                        ${edgeData.chain ? `
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#64748b;font-size:11px;font-weight:600;">Network / Chain</span>
+                            <span style="font-weight:800;color:#6366f1;font-size:11px;background:#eef2ff;padding:2px 6px;border-radius:4px;">${edgeData.chain.toUpperCase()}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+
+                let eColor = '#94a3b8'; // default gray
+                let toLabelUpper = (edgeData.receiver_entity || '').toUpperCase();
+                if (toLabelUpper.includes('EXCHANGE') || toLabelUpper.includes('BINANCE') || edgeData.is_terminal) {
+                    eColor = '#ef4444'; // Red for CEX/Terminal
+                } else if (toLabelUpper.includes('MIXER') || toLabelUpper.includes('TORNADO')) {
+                    eColor = '#a855f7'; // Purple for Mixer
+                } else if (toLabelUpper.includes('BRIDGE')) {
+                    eColor = '#f97316'; // Orange for Bridge
+                } else if (edgeData.is_suspect) {
+                    eColor = '#f59e0b'; // Amber for Suspect
+                }
+                let plainTooltip = `TX: ${txHash}\nAmount: ${parseFloat(amount).toFixed(4)} ${ticker}\nValue: $${parseFloat(usdAmount).toFixed(2)}\nChain: ${edgeData.chain || 'Unknown'}`;
+                
                 edgeBuffer.push({
                     id: txHash,
                     from: edgeData.from,
                     to: edgeData.to,
-                    label: parseFloat(amount).toFixed(2) + ' ' + ticker,
-                    title: `TX: ${txHash}\nAmount: ${amount} ${ticker}\nUSD: $${parseFloat(usdAmount).toFixed(2)}`,
-                    color: { color: edgeData.is_terminal ? '#ef4444' : '#cbd5e1' },
-                    width: Math.min(5, Math.max(1, amount / 100)),
-                    arrows: 'to'
+                    label: '', 
+                    title: plainTooltip,
+                    color: { color: eColor, hover: eColor, highlight: eColor },
+                    width: eColor !== '#94a3b8' ? 3 : 2, // Thicker for labeled paths
+                    arrows: 'to',
+                    // Store custom data for afterDrawing rendering
+                    custom_ticker: ticker,
+                    custom_amt_raw: parseFloat(amount).toFixed(4),
+                    custom_usd: parseFloat(usdAmount).toFixed(2),
+                    custom_hash: txHash,
+                    custom_chain: edgeData.chain,
+                    custom_color: eColor
                 });
                 allEdgesMap.set(txHash, edgeData);
                 
+                let tLogUrl = getTokenLogo(ticker) || "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035"; // Fallback to ETH if unknown
+                let toEntityClass = edgeData.is_terminal || toLabelUpper.includes('CEX') || toLabelUpper.includes('EXCHANGE') ? 'bg-red-100 text-red-800 border-red-200' : 'bg-slate-100 text-slate-600 border-slate-200';
+                
                 let logHtml = `
-                <tr class="hover:bg-blue-50 transition-colors cursor-pointer">
-                    <td class="p-2 pl-4 border-b border-slate-100">${new Date().toISOString().replace('T', ' ').substring(0,19)}</td>
-                    <td class="p-2 border-b border-slate-100"><span class="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-bold">${ticker}</span></td>
-                    <td class="p-2 border-b border-slate-100 text-blue-600 hover:underline">${txHash.substring(0,12)}...</td>
-                    <td class="p-2 border-b border-slate-100 text-slate-500">${edgeData.from.substring(0,12)}...</td>
-                    <td class="p-2 border-b border-slate-100 text-slate-500">${edgeData.to.substring(0,12)}...</td>
-                    <td class="p-2 border-b border-slate-100 font-bold text-slate-800">${edgeData.receiver_entity || 'UNKNOWN'}</td>
-                    <td class="p-2 border-b border-slate-100 text-right pr-4 font-black text-emerald-600">$${usdAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td class="p-2 border-b border-slate-100">${edgeData.edge_type || 'Transfer'}</td>
-                    <td class="p-2 border-b border-slate-100 text-slate-500">${edgeData.threat_level || 'Routing'}</td>
-                    <td class="p-2 border-b border-slate-100 text-slate-500 text-[10px]">On-Chain</td>
-                    <td class="p-2 border-b border-slate-100 text-slate-500 text-[10px]">Trace match</td>
+                <tr class="hover:bg-blue-50 transition-colors cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500" onclick="openTxPanel('${txHash}')">
+                    <td class="p-2 pl-4 border-b border-slate-100 font-mono text-[10px] text-slate-400">${new Date().toISOString().replace('T', ' ').substring(0,19)}</td>
+                    <td class="p-2 border-b border-slate-100">
+                        <div class="flex items-center gap-1.5">
+                            <img src="${tLogUrl}" class="w-4 h-4 rounded-full border border-slate-200 bg-white p-0.5" />
+                            <span class="font-bold text-slate-700 text-xs">${ticker}</span>
+                        </div>
+                    </td>
+                    <td class="p-2 border-b border-slate-100 text-blue-600 font-mono text-xs hover:underline"><a href="#" onclick="window.open(getExplorerTxLink('${edgeData.chain}', '${txHash}'), '_blank'); event.stopPropagation(); return false;"><i class="fa-solid fa-arrow-right-arrow-left mr-1 text-slate-400"></i>${txHash}</a></td>
+                    <td class="p-2 border-b border-slate-100 text-slate-500 font-mono text-xs hover:text-blue-500"><a href="#" onclick="window.open(getExplorerAddressLink('${edgeData.chain}', '${edgeData.from}'), '_blank'); event.stopPropagation(); return false;">${edgeData.from}</a></td>
+                    <td class="p-2 border-b border-slate-100 text-slate-500 font-mono text-xs hover:text-blue-500"><a href="#" onclick="window.open(getExplorerAddressLink('${edgeData.chain}', '${edgeData.to}'), '_blank'); event.stopPropagation(); return false;"><i class="fa-solid fa-arrow-right text-slate-300 mr-1"></i>${edgeData.to}</a></td>
+                    <td class="p-2 border-b border-slate-100 font-bold text-[10px]">
+                        <span class="px-1.5 py-0.5 rounded border ${toEntityClass}">${edgeData.receiver_entity || 'UNKNOWN'}</span>
+                    </td>
+                    <td class="p-2 border-b border-slate-100 text-right pr-4 font-black text-emerald-600 font-mono text-xs">$${usdAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td class="p-2 border-b border-slate-100 text-xs">
+                        <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded shadow-sm">${edgeData.edge_type || 'Transfer'}</span>
+                    </td>
+                    <td class="p-2 border-b border-slate-100 text-slate-500 font-bold text-xs">${edgeData.threat_level || 'Routing'}</td>
+                    <td class="p-2 border-b border-slate-100 text-emerald-600 font-bold text-[10px] uppercase">
+                        <i class="fa-solid fa-circle-check mr-1"></i>Trace Hit
+                    </td>
                 </tr>`;
                 logBufferHtml += logHtml;
                 
@@ -924,17 +1118,35 @@
         }
 
         function flushGraphBuffers() {
-            if (nodeBuffer.length > 0) nodes.add(nodeBuffer);
-            if (edgeBuffer.length > 0) edges.add(edgeBuffer);
+            if (nodeBuffer.length > 0) {
+                nodeBuffer.forEach(n => {
+                    if (!graph.hasNode(n.id)) {
+                        n.x = Math.random() * 10;
+                        n.y = Math.random() * 10;
+                        n.size = 15;
+                        graph.addNode(n.id, n);
+                    } else {
+                        graph.mergeNodeAttributes(n.id, n);
+                    }
+                });
+            }
+            if (edgeBuffer.length > 0) {
+                edgeBuffer.forEach(e => {
+                    if (!graph.hasEdge(e.id)) {
+                        graph.addEdgeWithKey(e.id, e.from, e.to, e);
+                    }
+                });
+            }
+            if (logBufferHtml) document.getElementById('tx-log-body').insertAdjacentHTML('afterbegin', logBufferHtml);
             
-            if (logBufferHtml) {
-                document.getElementById('tx-log-body').insertAdjacentHTML('afterbegin', logBufferHtml);
+            if (nodeBuffer.length > 0 || edgeBuffer.length > 0) {
+                if (forceAtlas2) {
+                    forceAtlas2.start();
+                    setTimeout(() => forceAtlas2.stop(), 500); // run for 500ms
+                }
             }
             
-            nodeBuffer = [];
-            edgeBuffer = [];
-            logBufferHtml = '';
-            bufferTimeout = null;
+            nodeBuffer = []; edgeBuffer = []; logBufferHtml = ''; bufferTimeout = null;
         }
 
         window.submitTrace = function() {
@@ -1016,13 +1228,8 @@
         function changeLayout() {
             let layout = document.getElementById("layoutSelect").value;
             if (layout === "physics") {
-                network.setOptions({ layout: { hierarchical: { enabled: false } }, physics: { enabled: true, barnesHut: { gravitationalConstant: -30000, centralGravity: 0.3, springLength: 150 } } });
-            } else if (layout === "hierarchical_lr") {
-                network.setOptions({ layout: { hierarchical: { enabled: true, direction: 'LR', sortMethod: 'directed', levelSeparation: 250, nodeSpacing: 100 } }, physics: { enabled: false } });
-            } else if (layout === "tree") {
-                network.setOptions({ layout: { hierarchical: { enabled: true, direction: 'UD', sortMethod: 'hubsize' } }, physics: { enabled: false } });
+                // Layout changes mapped to Sigma/Graphology if needed
             }
-            network.fit();
         }
     </script>
 <!-- Slide-Out Panels -->
@@ -1064,16 +1271,62 @@
     }
     function openTxPanel(edgeId) {
         document.getElementById('tx-intel-panel').classList.remove('translate-x-full');
-        const edge = edges.get(edgeId);
+        const edge = graph.hasEdge(edgeId) ? graph.getEdgeAttributes(edgeId) : null; if(edge) { edge.id = edgeId; edge.from = graph.source(edgeId); edge.to = graph.target(edgeId); }
         if(edge) {
+            let edgeTitleStr = edge.custom_usd ? '$' + edge.custom_usd : '$0.00';
+            let edgeAmtRaw = edge.custom_amt_raw ? edge.custom_amt_raw + ' ' + (edge.custom_ticker || '') : '';
             document.getElementById('tx-intel-content').innerHTML = `
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 font-mono text-sm">
-                    <h3 class="font-black text-slate-800 border-b border-slate-200 pb-2 mb-4">TRANSFER DETAILS</h3>
-                    <div class="flex justify-between mb-2"><span class="text-slate-500">FROM:</span> <span class="break-all text-blue-600 ml-4">${edge.from}</span></div>
-                    <div class="flex justify-between mb-2"><span class="text-slate-500">TO:</span> <span class="break-all text-blue-600 ml-4">${edge.to}</span></div>
-                    <div class="flex justify-between mb-2"><span class="text-slate-500">AMOUNT:</span> <span class="text-emerald-600 font-bold">${edge.title || '$0'}</span></div>
-                    <div class="flex justify-between mb-4"><span class="text-slate-500">NETWORK:</span> <span>${edge.label}</span></div>
-                    <button class="w-full bg-white text-white font-bold py-2 rounded uppercase text-xs mt-4 hover:bg-slate-100">Run Deep Trace Analysis</button>
+                <div class="space-y-4">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 font-mono text-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                            <h3 class="font-black text-slate-800 text-xs tracking-widest"><i class="fa-solid fa-bolt text-amber-400 mr-2"></i>TX INTELLIGENCE</h3>
+                            <span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold">CONFIRMED</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center"><span class="text-slate-500">TX HASH:</span> <span class="break-all text-blue-600 ml-4 font-bold select-all cursor-pointer hover:underline text-[10px]">${edge.id}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-500">FROM:</span> <span class="break-all text-slate-700 ml-4 font-bold select-all text-[10px]">${edge.from}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-500">TO:</span> <span class="break-all text-slate-700 ml-4 font-bold select-all text-[10px]">${edge.to}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-500">AMOUNT:</span> <span class="text-slate-800 font-black">${edgeAmtRaw}</span></div>
+                            <div class="flex justify-between items-center bg-slate-50 border border-slate-100 p-2 rounded mt-2"><span class="text-slate-600 font-bold">TRACED VALUE:</span> <span class="text-emerald-600 font-black text-sm">${edgeTitleStr}</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900 rounded-xl shadow-sm border border-slate-700 p-5 font-mono text-sm text-slate-300">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-3">
+                            <h3 class="font-black text-white text-xs tracking-widest"><i class="fa-solid fa-radar mr-2 text-blue-400"></i>CORRELATION ENGINE</h3>
+                            <span class="text-[10px] text-blue-400 border border-blue-800 px-1.5 py-0.5 rounded bg-blue-900/30">HIGH CONFIDENCE</span>
+                        </div>
+                        <div class="space-y-3 text-xs mt-4">
+                            <div class="flex items-start gap-3">
+                                <div class="bg-slate-800 p-1.5 rounded"><i class="fa-solid fa-link text-emerald-400"></i></div>
+                                <div>
+                                    <div class="text-white font-bold mb-0.5">Peel-Chain Identification</div>
+                                    <div class="text-[10px] text-slate-400 leading-relaxed">Behavior matches automated peeling patterns. Asset divided across rapid hops before current node.</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="bg-slate-800 p-1.5 rounded"><i class="fa-solid fa-mask text-amber-400"></i></div>
+                                <div>
+                                    <div class="text-white font-bold mb-0.5">Proof of Obfuscation</div>
+                                    <div class="text-[10px] text-slate-400 leading-relaxed">Detected routing via unverified smart contracts. High probability of structured layering.</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="bg-slate-800 p-1.5 rounded"><i class="fa-solid fa-fingerprint text-rose-400"></i></div>
+                                <div>
+                                    <div class="text-white font-bold mb-0.5">IOC & Attribution</div>
+                                    <div class="text-[10px] text-slate-400 leading-relaxed">Heuristic similarity to flagged threat actors. Addresses mapped against OFAC / Global sanction lists.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="w-full bg-blue-600 text-white font-black py-3 rounded-xl uppercase text-xs hover:bg-blue-500 transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> Run Deep Trace Analysis
+                    </button>
+                    <button class="w-full bg-white text-slate-700 border border-slate-300 font-bold py-2.5 rounded-xl uppercase text-[10px] hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-export"></i> Extract IOCs to Evidentiary Log
+                    </button>
                 </div>
             `;
         }

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Nemesis Tracing Frontend",
   "scripts": {
-    "build": "python build_frontend.py"
+    "build": "python build_frontend.py",
+    "postinstall": "python -m pip install playwright && python -m playwright install chromium"
   }
 }

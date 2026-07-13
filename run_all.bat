@@ -16,6 +16,9 @@ for /f "tokens=5" %%a in ('C:\Windows\System32\netstat.exe -aon ^| C:\Windows\Sy
 echo.
 echo Ports cleared.
 echo.
+echo Starting Darknet Autonomous Service...
+start /B python scripts\darknet.py
+
 echo Starting Nemesis Core Engine...
 cd /d "C:\Users\LEGIONX\downloads\nemesis\tracer_scripts"
 python nemesis_core.py

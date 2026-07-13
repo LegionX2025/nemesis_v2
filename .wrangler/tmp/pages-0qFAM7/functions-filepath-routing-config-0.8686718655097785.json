@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/:catchall*",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/[[catchall]].js:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

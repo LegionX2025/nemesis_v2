@@ -23,6 +23,11 @@ export async function onRequest(context) {
     // Optional: Inject extra headers here if needed for authorization to the backend
     // proxyRequest.headers.set('X-Nemesis-Client', 'Pages-Worker');
 
+    // Handle WebSocket Upgrades
+    if (request.headers.get("Upgrade") === "websocket") {
+        return fetch(proxyRequest);
+    }
+
     try {
         const response = await fetch(proxyRequest);
         

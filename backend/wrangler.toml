@@ -1,0 +1,24 @@
+name = "nemesis-api"
+main = "nemesis_core.py"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["python_workers"]
+
+# Cloudflare D1 Serverless Database Binding
+[[d1_databases]]
+binding = "DB" # Available in Python as env.DB
+database_name = "nemesis-d1"
+database_id = "00000000-0000-0000-0000-000000000000" # Placeholder, will be injected via CI/CD or wrangler d1 create
+
+# Cloudflare KV for quick caching
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "00000000000000000000000000000000" # Placeholder
+
+# Cloudflare R2 Object Storage for Trace Exports
+[[r2_buckets]]
+binding = "TRACE_STORAGE"
+bucket_name = "nemesis-traces"
+
+[vars]
+ENVIRONMENT = "production"
+# All other secrets like TATUM_API_KEY, GEMINI_API_KEYS will be securely added via `wrangler secret put`

@@ -6,6 +6,7 @@
     <title>NEMESIS ID | Corporate Intelligence & Entity Reconstruction</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/global_nav.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Syncopate:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -785,39 +786,116 @@
         </div>
 
         <!-- TAB: ASSETS -->
-        <div id="tab-assets" class="tab-content hidden h-full flex flex-col">
-            <h3 class="font-black text-xl text-slate-800 tracking-widest uppercase mb-4 border-b border-slate-200 pb-2 flex items-center gap-2"><i class="fa-solid fa-coins text-amber-500"></i> Global Multi-Chain Portfolio</h3>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex-grow">
-                <p class="text-sm text-slate-500 mb-4">Multi-chain portfolio breakdown populated via Nemesis Core.</p>
-                <div id="assets-content" class="text-xs font-mono text-slate-700"></div>
+        <div id="tab-assets" class="tab-content space-y-6 max-w-[1600px] mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Asset Summary -->
+                <div class="data-card bg-white/90 backdrop-blur-md shadow-sm border-t-4 border-t-amber-500 md:col-span-1">
+                    <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-4"><i class="fa-solid fa-chart-pie text-amber-500 mr-2"></i> Portfolio Split</h2>
+                    <div class="relative w-full aspect-square flex items-center justify-center">
+                        <canvas id="assets-chart" class="absolute inset-0"></canvas>
+                        <div class="text-center z-10 flex flex-col items-center justify-center pointer-events-none mt-2">
+                            <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-0.5">Total Value</span>
+                            <span class="font-mono text-xl font-black text-amber-600 drop-shadow-sm block" id="assets-total-usd">$-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Holdings Grid -->
+                <div class="data-card bg-white/90 backdrop-blur-md shadow-sm border-t-4 border-t-slate-800 md:col-span-3 flex flex-col">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
+                        <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest"><i class="fa-solid fa-wallet text-slate-600 mr-2"></i> Multi-Chain Holdings</h2>
+                        <div class="flex gap-2">
+                            <button class="bg-slate-100 text-slate-600 px-3 py-1 text-[10px] rounded border border-slate-200 font-mono font-bold hover:bg-slate-200 transition">Tokens</button>
+                            <button class="bg-white text-slate-600 px-3 py-1 text-[10px] rounded border border-slate-200 font-mono font-bold hover:bg-slate-50 transition">NFTs</button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto flex-grow">
+                        <table class="cyber-table whitespace-nowrap w-full">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Network</th>
+                                    <th class="text-right">Balance</th>
+                                    <th class="text-right">Value (USD)</th>
+                                    <th class="text-center">Contract</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assets-table-body" class="font-mono text-xs">
+                                <tr><td colspan="5" class="text-center text-slate-500 py-10 italic">Awaiting asset scan...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- TAB: CHAINS -->
-        <div id="tab-chains" class="tab-content hidden h-full flex flex-col">
-            <h3 class="font-black text-xl text-slate-800 tracking-widest uppercase mb-4 border-b border-slate-200 pb-2 flex items-center gap-2"><i class="fa-solid fa-link text-indigo-500"></i> Supported Networks</h3>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex-grow">
-                <p class="text-sm text-slate-500 mb-4">Multi-network footprints and active chains.</p>
-                <div id="chains-content" class="flex gap-4 flex-wrap"></div>
+        <div id="tab-chains" class="tab-content space-y-6 max-w-[1600px] mx-auto">
+            <div class="data-card border-t-4 border-t-indigo-600 bg-white/90 backdrop-blur-md shadow-sm">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-4 mb-6">
+                    <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2"><i class="fa-solid fa-network-wired text-indigo-600"></i> Network Activity Map</h2>
+                    <span class="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Active Chains: <span id="chains-active-count" class="text-indigo-600">0</span></span>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4" id="chains-grid">
+                    <!-- Dynamic Chain Cards -->
+                    <div class="col-span-full text-center text-slate-500 py-10 font-mono text-xs italic">Awaiting network footprint scan...</div>
+                </div>
+                
+                <div class="mt-8 border-t border-slate-200 pt-6">
+                    <h3 class="text-xs font-black text-slate-700 uppercase tracking-widest mb-4"><i class="fa-solid fa-bridge text-indigo-400 mr-2"></i> Cross-Chain Bridge Routes</h3>
+                    <div class="bg-slate-50 rounded-lg border border-slate-200 h-48 flex items-center justify-center">
+                        <p class="font-mono text-xs text-slate-500 italic">No bridging data available yet.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- TAB: BALANCES -->
-        <div id="tab-balances" class="tab-content hidden h-full flex flex-col">
-            <h3 class="font-black text-xl text-slate-800 tracking-widest uppercase mb-4 border-b border-slate-200 pb-2 flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-emerald-500"></i> Balance Analytics</h3>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex-grow">
-                <p class="text-sm text-slate-500 mb-4">Graphical balance analytics and historical flow.</p>
-                <div class="h-64 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-500 font-mono text-sm">[ High-Contrast Graph Placeholder ]</div>
+        <div id="tab-balances" class="tab-content space-y-6 max-w-[1600px] mx-auto">
+            <div class="data-card border-t-4 border-t-emerald-500 bg-white/90 backdrop-blur-md shadow-sm">
+                <div class="flex justify-between items-end border-b border-slate-200 pb-4 mb-6">
+                    <div>
+                        <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 mb-1"><i class="fa-solid fa-chart-line text-emerald-500"></i> Balance Analytics</h2>
+                        <p class="text-[10px] font-mono text-slate-500">Historical accumulation and depletion vectors.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-white border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition">7D</button>
+                        <button class="px-3 py-1 bg-emerald-600 text-white border border-emerald-700 rounded text-[10px] font-mono font-bold shadow-sm">30D</button>
+                        <button class="px-3 py-1 bg-white border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition">ALL</button>
+                    </div>
+                </div>
+                
+                <div class="relative w-full h-[400px] bg-slate-50/50 rounded-xl border border-slate-200 p-4">
+                    <canvas id="balance-history-chart" class="w-full h-full"></canvas>
+                    <div id="balance-chart-empty" class="absolute inset-0 flex items-center justify-center font-mono text-xs text-slate-500 italic pointer-events-none">Awaiting time-series balance data...</div>
+                </div>
             </div>
         </div>
 
         <!-- TAB: GEORISK -->
-        <div id="tab-georisk" class="tab-content hidden h-full flex flex-col">
-            <h3 class="font-black text-xl text-slate-800 tracking-widest uppercase mb-4 border-b border-slate-200 pb-2 flex items-center gap-2"><i class="fa-solid fa-earth-americas text-red-500"></i> GeoRisk / IP Relay Nodes</h3>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex-grow">
-                <p class="text-sm text-slate-500 mb-4">Interactive Global Map & Relay node data.</p>
-                <div class="h-64 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-slate-500 font-mono text-sm">[ Interactive Map Placeholder ]</div>
-                <div id="georisk-content" class="mt-4 font-mono text-xs text-slate-700"></div>
+        <div id="tab-georisk" class="tab-content space-y-6 max-w-[1600px] mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Geo Map -->
+                <div class="data-card border-t-4 border-t-red-600 bg-slate-900 shadow-xl md:col-span-2 overflow-hidden relative">
+                    <h2 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 mb-4 absolute z-10"><i class="fa-solid fa-satellite-dish text-red-500 animate-pulse"></i> Global Infrastructure Footprint</h2>
+                    
+                    <!-- Cyber Map Background overlay -->
+                    <div class="absolute inset-0 opacity-40 bg-[url('https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg')] bg-no-repeat bg-center bg-cover mix-blend-screen filter invert pointer-events-none"></div>
+                    
+                    <div class="h-[400px] w-full flex items-center justify-center relative z-10">
+                        <div id="geo-map-overlay" class="absolute inset-0 z-20 flex items-center justify-center font-mono text-xs text-red-400 italic bg-slate-900/50 backdrop-blur-sm">Triangulating Node IPs & Exchange Jurisdictions...</div>
+                    </div>
+                </div>
+                
+                <!-- IP Data -->
+                <div class="data-card border-t-4 border-t-slate-800 bg-white/90 backdrop-blur-md shadow-sm flex flex-col">
+                    <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-200 pb-2"><i class="fa-solid fa-server text-slate-600 mr-2"></i> Endpoint Nodes</h2>
+                    <div class="flex-grow overflow-y-auto space-y-3 font-mono text-[10px]" id="georisk-nodes-list">
+                        <div class="text-slate-500 text-center py-10 italic">Awaiting geo-spatial data...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -987,10 +1065,36 @@
              TAB 10: INTELLIGENCE
         ====================================== -->
         <div id="tab-intelligence" class="tab-content max-w-[1600px] mx-auto space-y-6">
-            <div class="data-card border-t-4 border-t-slate-800 bg-white/90 backdrop-blur-md">
-                <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2"><i class="fa-solid fa-user-secret text-slate-800"></i> OSINT & Reconnaissance Summary</h2>
-                <div id="intelligence-container" class="font-mono text-xs space-y-4">
-                    <div class="text-slate-500 w-full text-center py-4">Awaiting Intelligence Fetch...</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Clear Web OSINT -->
+                <div class="data-card border-t-4 border-t-blue-500 bg-white/90 backdrop-blur-md shadow-sm">
+                    <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fa-brands fa-searchengin text-blue-500"></i> Clear Web Mentions</h2>
+                    <div id="intel-clear-web" class="font-mono text-[10px] space-y-3 h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="text-slate-500 text-center py-10 italic">Awaiting spider output...</div>
+                    </div>
+                </div>
+
+                <!-- Dark Web / Forum OSINT -->
+                <div class="data-card border-t-4 border-t-slate-800 bg-white/90 backdrop-blur-md shadow-sm">
+                    <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fa-solid fa-mask text-slate-700"></i> Dark Web / Forums</h2>
+                    <div id="intel-dark-web" class="font-mono text-[10px] space-y-3 h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="text-slate-500 text-center py-10 italic">Awaiting tor/i2p relays...</div>
+                    </div>
+                </div>
+
+                <!-- Social/Twitter OSINT -->
+                <div class="data-card border-t-4 border-t-sky-500 bg-white/90 backdrop-blur-md shadow-sm">
+                    <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fa-brands fa-twitter text-sky-500"></i> Social Media Correlation</h2>
+                    <div id="intel-social" class="font-mono text-[10px] space-y-3 h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="text-slate-500 text-center py-10 italic">Awaiting handle associations...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="data-card border-t border-slate-200 bg-white/90 backdrop-blur-md shadow-sm">
+                <h2 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fa-solid fa-link text-indigo-500"></i> Associated Domains / IPs</h2>
+                <div id="intel-domains" class="flex flex-wrap gap-2 font-mono text-[10px]">
+                    <div class="text-slate-500 italic w-full text-center py-4">Awaiting DNS resolutions...</div>
                 </div>
             </div>
         </div>
@@ -998,15 +1102,48 @@
         <!-- =====================================
              TAB 11: AI INSIGHTS
         ====================================== -->
-        <div id="tab-ai-insights" class="tab-content max-w-[1600px] mx-auto">
-            <div class="data-card border-t-4 border-t-purple-600 bg-white/90 backdrop-blur-md shadow-sm doc-style">
-                <div class="flex justify-between items-center border-b border-slate-300 pb-4 mb-6">
-                    <h2 class="text-lg font-black text-slate-900 uppercase tracking-widest flex items-center gap-3 font-serif"><i class="fa-solid fa-brain text-purple-600 text-xl"></i> AI Insights Report</h2>
-                    <button onclick="switchTab('tab-report')" class="bg-white border border-slate-200 hover:bg-slate-100 text-white px-5 py-2 rounded text-xs font-bold font-mono uppercase tracking-widest transition shadow-md"><i class="fa-solid fa-file-export mr-2"></i> Export</button>
+        <div id="tab-ai-insights" class="tab-content max-w-[1600px] mx-auto space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- AI Control Panel -->
+                <div class="data-card border-t-4 border-t-purple-600 bg-slate-900 text-white shadow-xl md:col-span-1 flex flex-col relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-slate-900 opacity-50 z-0 pointer-events-none"></div>
+                    <div class="relative z-10">
+                        <h2 class="text-xs font-black text-purple-400 uppercase tracking-widest flex items-center gap-2 mb-6"><i class="fa-solid fa-brain text-purple-500 animate-pulse"></i> Swarm AI Engine</h2>
+                        
+                        <div class="space-y-4 font-mono text-[10px]">
+                            <div>
+                                <span class="text-slate-400 block mb-1">Model Version</span>
+                                <div class="bg-slate-800 px-3 py-1.5 rounded border border-purple-500/30 text-purple-300 font-bold">GEMINI-3.1-EXTENDED</div>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block mb-1">Compute Nodes</span>
+                                <div class="bg-slate-800 px-3 py-1.5 rounded border border-slate-700 text-emerald-400 font-bold">12 / ACTIVE</div>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block mb-1">Reasoning Tokens Used</span>
+                                <div class="bg-slate-800 px-3 py-1.5 rounded border border-slate-700 text-slate-300 font-bold" id="ai-tokens">-</div>
+                            </div>
+                        </div>
+                        
+                        <button class="mt-8 w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-2 rounded text-[10px] uppercase tracking-widest shadow-lg shadow-purple-900/50 border border-purple-500 transition" onclick="triggerAIAnalysis()">
+                            <i class="fa-solid fa-bolt mr-2"></i> Regenerate Analysis
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="space-y-6 font-serif text-sm text-slate-700 leading-relaxed">
-                    <p id="ai-insights-text"><strong>Summary:</strong> Awaiting swarm intelligence synthesis...</p>
+                <!-- AI Output Document -->
+                <div class="data-card border border-slate-200 bg-white/90 backdrop-blur-md shadow-sm md:col-span-3 doc-style min-h-[500px]">
+                    <div class="flex justify-between items-center border-b border-slate-300 pb-4 mb-6">
+                        <h2 class="text-lg font-black text-slate-900 uppercase tracking-widest flex items-center gap-3 font-serif"><i class="fa-solid fa-file-waveform text-slate-700 text-xl"></i> Synthesized Investigation Report</h2>
+                        <div class="flex gap-2">
+                            <button class="text-slate-500 hover:text-blue-600 px-2 py-1 transition"><i class="fa-solid fa-copy"></i></button>
+                            <button onclick="switchTab('tab-report')" class="bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 px-4 py-1.5 rounded text-[10px] font-bold font-mono uppercase tracking-widest transition shadow-sm"><i class="fa-solid fa-file-export mr-2 text-red-500"></i> Export PDF</button>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-insights-text" class="font-serif text-sm text-slate-800 leading-loose text-justify whitespace-pre-wrap">
+                        <span class="text-slate-400 italic">Initiate trace sequence to generate advanced behavioral insights...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1451,27 +1588,34 @@
                 try {
                     // Start parallel fetches
                     const initP = fetch(`/api/node/init?address=${encodeURIComponent(address)}`).then(async r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("Node Context Identified...");
                         return r.json();
-                    });
+                    }).catch(e => ({ status: 'error', message: e.message, basic_label: 'Unknown (Error)' }));
                     
                     const osintP = fetch(`/api/node/osint?address=${encodeURIComponent(address)}`).then(async r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("OSINT Fusion Complete...");
                         return r.json();
-                    });
+                    }).catch(e => ({ status: 'error', message: e.message, is_alert: false, label: 'Unknown' }));
                     
                     const aiP = fetch(`/api/node/ai?address=${encodeURIComponent(address)}`).then(async r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("Swarm AI Analysis Complete...");
                         return r.json();
-                    });
+                    }).catch(e => ({ status: 'error', message: e.message }));
                     
                     const graphP = fetch(`/api/node/graph?address=${encodeURIComponent(address)}`).then(async r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("Cross-Chain Graph Synthesized...");
                         const data = await r.json();
                         if (data.status === 'error' || (data.data && data.data.investigation && data.data.investigation.summary && data.data.investigation.summary.includes('failed'))) {
                             triggerLoader(`Graph API Error: ${data.message || (data.data.investigation && data.data.investigation.summary) || 'Unknown error'}`, true);
                         }
                         return data;
+                    }).catch(e => {
+                        triggerLoader(`Graph API Error: ${e.message}`, true);
+                        return { status: 'error', message: e.message, real_transactions: [] };
                     });
                     
                     const [init, osint, ai, graph] = await Promise.all([initP, osintP, aiP, graphP]);

@@ -1,4 +1,10 @@
-﻿absl-py==2.1.0
+websockets
+beautifulsoup4
+motor
+mcp
+aiokafka
+playwright
+absl-py==2.1.0
 aiodns==3.2.0
 aiofiles==24.1.0
 aiohappyeyeballs==2.6.1
