@@ -102,6 +102,8 @@ async def _fetch_etherscan(session, address: str, chain: str) -> List[GBIOEdge]:
         logger.error(f"Error fetching token txs: {e}")
         
     return edges
+async def run_collectors(session: aiohttp.ClientSession, address: str, chain: str = "eth"):
+    """
     Replaces the broken bitquery_collectors.py logic.
     """
     try:

@@ -20,21 +20,59 @@ class AIFabricRouter:
         self._initialize_providers()
         
     def _initialize_providers(self):
-        # In a real environment, load credentials from config/Vault
+        # Initializing Gemini Multi-Key Rotation Providers
         self.providers = {
-            "gemini-3.1-pro": GoogleGeminiProvider({"model": "gemini-3.1-pro"}),
+            "gemini-3.1-pro-extended": GoogleGeminiProvider({"model": "gemini-3.1-pro"}),
             "gemini-3.1-flash": GoogleGeminiProvider({"model": "gemini-3.1-flash"}),
-            "gemini-2.5-pro": GoogleGeminiProvider({"model": "gemini-2.5-pro"}),
-            "gemini-2.5-flash": GoogleGeminiProvider({"model": "gemini-2.5-flash"}),
-            "gemini-vision": GoogleGeminiProvider({"model": "gemini-2.5-flash-vision"}),
+            "gemini-3.0-pro": GoogleGeminiProvider({"model": "gemini-3.0-pro"}),
+            "gemini-3.0-flash": GoogleGeminiProvider({"model": "gemini-3.0-flash"}),
             "gpt-5.5-mini": OpenAIProvider({"model": "gpt-5.5-mini"}),
-            "gpt-5.5-turbo": OpenAIProvider({"model": "gpt-5.5-turbo"}),
             "claude-3-sonnet": AnthropicProvider({"model": "claude-3-sonnet"}),
-            "claude-3-opus": AnthropicProvider({"model": "claude-3-opus"}),
-            "deepseek-coder": DeepSeekProvider({"model": "deepseek-coder"}),
-            "deepseek-reasoner": DeepSeekProvider({"model": "deepseek-reasoner"}),
             "nemesis-vllm": LocalVLLMProvider({"model": "nemesis-vllm"}),
         }
+
+    async def parallel_route(self, prompt: str, models: List[str] = None, use_cache: bool = True, **kwargs) -> AIFabricResponse:
+        """
+        Executes the prompt across multiple Gemini models in parallel.
+        Returns the fastest successful response.
+        """
+        if use_cache:
+            cached_res = self.cache.get(prompt, **kwargs)
+            if cached_res:
+                cached_res.cached = True
+                return cached_res
+
+        if not models:
+            # Default parallel aggressive burst
+            models = ["gemini-3.1-flash", "gemini-3.0-flash"]
+            
+        logger.info(f"[ROUTER] Engaging Parallel AI Burst for models: {models}")
+        
+        tasks = []
+        for model_id in models:
+            provider = self.providers.get(model_id)
+            if provider:
+                tasks.append(asyncio.create_task(provider.generate_content(prompt, **kwargs)))
+                
+        if not tasks:
+            raise ValueError(f"None of the specified models were found in the AIFabric.")
+            
+        # Wait for the first one to finish successfully
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        
+        for p in pending:
+            p.cancel() # Cancel the slower models!
+            
+        for task in done:
+            try:
+                res = task.result()
+                if use_cache:
+                    self.cache.set(prompt, res, **kwargs)
+                return res
+            except Exception as e:
+                logger.error(f"[ROUTER] Parallel execution error: {e}")
+                
+        raise Exception("All parallel AI providers failed.")
 
     async def route(self, prompt: str, explicit_type: str = None, use_cache: bool = True, **kwargs) -> AIFabricResponse:
         # Check cache

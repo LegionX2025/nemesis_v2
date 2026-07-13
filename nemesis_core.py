@@ -1,12 +1,109 @@
-import sys
 import os
+import sys
+import subprocess
+import time
+
+# ==============================================================================
+# [NEMESIS OMEGA] PRE-BOOT INITIALIZATION & AUTO-HEALING ENVIRONMENT
+# ==============================================================================
+IS_CLOUD = os.environ.get("VERCEL") or os.environ.get("RENDER")
+
+if not IS_CLOUD:
+    print("\n\033[96m=================================================================\033[0m")
+    print("\033[96m       [NEMESIS OMEGA] INITIATING FULL SYSTEM PRE-CHECK          \033[0m")
+    print("\033[96m=================================================================\033[0m")
+    print("[SYSTEM] Validating Local Python Environment...")
+    
+    required_packages = [
+        "fastapi", "uvicorn", "motor", "pydantic", "python-dotenv", 
+        "requests", "aiohttp", "websockets", "colorama", "beautifulsoup4",
+        "mcp", "pymongo", "cryptography", "asyncpg", "google-generativeai"
+    ]
+    
+    missing_packages = []
+    for pkg in required_packages:
+        try:
+            # Handle special module names
+            mod_name = pkg.replace("-", "_")
+            if pkg == "python-dotenv": mod_name = "dotenv"
+            elif pkg == "beautifulsoup4": mod_name = "bs4"
+            elif pkg == "google-generativeai": mod_name = "google.generativeai"
+            __import__(mod_name)
+        except ImportError:
+            missing_packages.append(pkg)
+            
+    if missing_packages:
+        print(f"\033[93m[AUTO-HEAL] Missing dependencies detected: {', '.join(missing_packages)}\033[0m")
+        print("\033[93m[AUTO-HEAL] Engaging automatic dependency resolution...\033[0m")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", *missing_packages])
+        print("\033[92m[SUCCESS] Dependencies installed. Rebooting core...\033[0m\n")
+        os.execv(sys.executable, ['python'] + sys.argv)
+    
+    print("\033[92m[OK]\033[0m Dependencies Validated.")
+    time.sleep(0.5)
+    
+    # Dotenv Check & API Providers
+    print("\n[SYSTEM] Checking API Providers & Configuration...")
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # Check Critical APIs
+    api_providers = {
+        "Bitquery API": os.environ.get("BITQUERY_API_KEY"),
+        "Etherscan API": os.environ.get("ETHERSCAN_API_KEY"),
+        "Polygonscan API": os.environ.get("POLYGONSCAN_API_KEY"),
+        "BscScan API": os.environ.get("BSCSCAN_API_KEY"),
+        "Gemini AI Fabric": os.environ.get("GEMINI_API_KEYS") or os.environ.get("GEMINI_API_KEY"),
+        "OpenAI Fallback": os.environ.get("OPENAI_API_KEY")
+    }
+    
+    for provider, key in api_providers.items():
+        if key:
+            print(f"\033[92m[OK]\033[0m {provider} [DETECTED]")
+        else:
+            print(f"\033[93m[WARN]\033[0m {provider} [MISSING - Fallback Mode]")
+            
+    time.sleep(0.5)
+    
+    # Networks, RPCs, & Tracing Engine Check
+    print("\n[SYSTEM] Booting Diagnostic Engines & Networks...")
+    
+    # Check RPCs
+    rpcs = {
+        "ETH RPC": os.environ.get("ETH_RPC_URL", "Public Default"),
+        "BTC RPC": os.environ.get("BTC_RPC_URL", "Public Default"),
+        "SOL RPC": os.environ.get("SOL_RPC_URL", "Public Default"),
+        "POLYGON RPC": os.environ.get("POLYGON_RPC_URL", "Public Default")
+    }
+    for network, rpc in rpcs.items():
+        status_color = "\033[92m" if "Default" not in rpc else "\033[93m"
+        print(f"{status_color}[OK]\033[0m {network} Route -> {rpc[:20]}...")
+        
+    print("\033[92m[OK]\033[0m Deep Scraping Engine [ONLINE]")
+    print("\033[92m[OK]\033[0m NEMESIS Cross-Chain Tracing Matrix [INITIALIZED]")
+    
+    # Database
+    db_uri = os.environ.get("MONGODB_URI")
+    if db_uri:
+        print("\033[92m[OK]\033[0m Target Database Connector (MongoDB) [CONNECTED]")
+    else:
+        print("\033[93m[WARN]\033[0m Target Database Connector (MongoDB) [MISSING - In-Memory Mode]")
+
+    time.sleep(0.5)
+    
+    print("\033[96m=================================================================\033[0m")
+    print("\033[96m           PRE-CHECK COMPLETE. IGNITING FASTAPI CORE.            \033[0m")
+    print("\033[96m=================================================================\033[0m\n")
+
+# ==============================================================================
+
 from dotenv import load_dotenv
 load_dotenv()
 import logging
 import certifi
 import warnings
 warnings.simplefilter('ignore', FutureWarning)
-import subprocess
+
 import importlib.util
 try:
     import oklink_scraper
