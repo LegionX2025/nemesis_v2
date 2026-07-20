@@ -1,0 +1,24 @@
+
+ ⛅️ wrangler 4.106.0 (update available 4.112.0)
+───────────────────────────────────────────────
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mWarning: Your working directory is a git repo and has uncommitted changes[0m
+
+  To silence this warning, pass in --commit-dirty=true
+
+
+✨ Compiled Worker successfully
+Uploading... (18/22)
+Uploading... (19/22)
+Uploading... (20/22)
+Uploading... (22/22)
+✨ Success! Uploaded 4 files (18 already uploaded) (1.90 sec)
+
+✨ Uploading Functions bundle
+🌎 Deploying...
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mDeployment failed![0m
+
+  	Failed to publish your Function. Got error: D1 binding 'n1' references database '73ef6e7d-9499-4d59-a190-ae7220873a71' which was not found. Verify the database exists in your account and that the database_id in your configuration is correct.
+
+
+🪵  Logs were written to "C:\Users\LEGIONX\.wrangler\logs\wrangler-2026-07-17_16-12-13_934.log"

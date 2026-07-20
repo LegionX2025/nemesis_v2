@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NEMESIS | Darknet Intelligence</title>
+    <link rel="stylesheet" href="/tailwind.css">
+    <script src="/global_nav.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600;700;800&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="/nemesis-ui.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        .dashboard-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .dashboard-panel:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-color: #475569; }
+        #network-graph { width: 100%; height: 400px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; }
+        
+        /* Animations */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        .animate-slide-up { opacity: 0; animation: fadeInUp 0.8s ease-out forwards; }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="max-w-7xl mx-auto space-y-8 mt-10 animate-fade-in-up">
+        
+        <!-- Header & Search -->
+        <div class="text-center">
+            <h1 class="text-4xl font-black text-f8fafc tracking-tighter mb-4" style="font-family: 'Syncopate', sans-serif;">DARKNET <span class="text-blue-500" style="text-shadow: 0 0 15px rgba(59,130,246,0.5);">INTELLIGENCE</span></h1>
+            <p class="text-slate-400 mb-8 font-mono">NEMESIS ONTOLOGY v3.0 | Real-time Autonomous OSINT Crawler</p>
+            
+            <div class="max-w-2xl mx-auto relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
+                <input type="text" id="search-input" placeholder="Search identities, wallets, emails, or aliases..." class="w-full pl-12 pr-4 py-4 rounded-full border border-slate-700 bg-slate-800 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none shadow-xl transition-all text-lg relative z-10">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-xl z-20"></i>
+                <button onclick="performSearch()" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-6 py-2 rounded-full font-semibold transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] z-20 hover:scale-105">Search</button>
+            </div>
+        </div>
+
+        <!-- Flipcards Grid -->
+        <div id="results-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Results injected here -->
+        </div>
+
+        <!-- Live Dashboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="dashboard-panel animate-slide-up" style="animation-delay: 0.2s;">
+                <h3 class="text-xl font-bold mb-4 border-b border-slate-700 pb-2"><i class="fa-solid fa-spider text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"></i> Live Crawler Telemetry</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-800/50 border-b border-slate-700">
+                            <tr>
+                                <th class="px-4 py-3">Timestamp</th>
+                                <th class="px-4 py-3">Source</th>
+                                <th class="px-4 py-3">Entity Type</th>
+                                <th class="px-4 py-3">Extracted Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="live-table-body" class="divide-y divide-slate-800/50 text-slate-300">
+                            <!-- Live rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="dashboard-panel animate-slide-up" style="animation-delay: 0.3s;">
+                <h3 class="text-xl font-bold mb-4 border-b border-slate-700 pb-2"><i class="fa-solid fa-project-diagram text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]"></i> Auto-Relationship Graph</h3>
+                <div id="network-graph"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sliding Modal Overlay -->
+    <div class="sliding-modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+
+    <!-- Sliding Modal -->
+    <div class="sliding-modal" id="sliding-modal">
+        <div class="modal-header">
+            <div>
+                <h2 class="text-2xl font-bold" id="modal-title">Entity Dossier</h2>
+                <p class="text-sm text-slate-500" id="modal-subtitle">NEMESIS ID: ---</p>
+            </div>
+            <button class="modal-close-btn" onclick="closeModal()"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="modal-body space-y-6" id="modal-content">
+            <!-- Modal content injected here -->
+        </div>
+    </div>
+
+    <script>
+        // Vis-Network Setup
+        let network = null;
+        let nodes = new vis.DataSet();
+        let edges = new vis.DataSet();
+
+        function initGraph() {
+            const container = document.getElementById('network-graph');
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                nodes: { shape: 'dot', size: 16, font: { size: 12, color: '#334155' }, borderWidth: 2 },
+                edges: { width: 1, color: { color: '#cbd5e1' }, smooth: { type: 'continuous' } },
+                physics: { barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 95 } }
+            };
+            network = new vis.Network(container, data, options);
+        }
+
+        // Mock Search Function
+        async function performSearch() {
+            const query = document.getElementById('search-input').value;
+            if(!query) return;
+
+            try {
+                // Connect to FastAPI endpoint
+                const res = await fetch(`/api/darknet/search?q=${encodeURIComponent(query)}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    renderFlipcards(data.results);
+                } else {
+                    // Fallback to mock data for layout testing
+                    renderFlipcards([
+                        { id: '1', type: 'WALLET', data: '0x1A2B...', label: 'Lazarus Group', score: 98 },
+                        { id: '2', type: 'DOMAIN', data: 'silkroad4.onion', label: 'Darknet Market', score: 85 },
+                        { id: '3', type: 'IP', data: '192.168.1.1', label: 'C2 Server', score: 70 }
+                    ]);
+                }
+            } catch (e) {
+                console.error("Search failed, using mock", e);
+                renderFlipcards([
+                    { id: '1', type: 'WALLET', data: '0x1A2B...', label: 'Lazarus Group', score: 98 },
+                    { id: '2', type: 'DOMAIN', data: 'silkroad4.onion', label: 'Darknet Market', score: 85 },
+                    { id: '3', type: 'IP', data: '192.168.1.1', label: 'C2 Server', score: 70 }
+                ]);
+            }
+        }
+
+        function renderFlipcards(results) {
+            const grid = document.getElementById('results-grid');
+            grid.innerHTML = '';
+            
+            results.forEach(res => {
+                const color = res.score > 80 ? 'red' : (res.score > 50 ? 'orange' : 'emerald');
+                const card = document.createElement('div');
+                card.className = 'flip-card';
+                card.onclick = () => openModal(res);
+                card.innerHTML = `
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <i class="fa-solid fa-fingerprint text-4xl text-slate-300 mb-4"></i>
+                            <h3 class="text-lg font-bold truncate w-full">${res.data}</h3>
+                            <span class="px-3 py-1 bg-${color}-100 text-${color}-600 rounded-full text-xs font-bold mt-2">${res.type}</span>
+                        </div>
+                        <div class="flip-card-back">
+                            <h4 class="font-bold text-lg mb-2">High-End Intel</h4>
+                            <p class="text-sm font-mono mb-4 text-blue-600">${res.label}</p>
+                            <div class="w-full bg-slate-200 rounded-full h-2 mb-2">
+                                <div class="bg-${color}-500 h-2 rounded-full" style="width: ${res.score}%"></div>
+                            </div>
+                            <p class="text-xs text-slate-500">Risk Score: ${res.score}</p>
+                            <button class="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-800 underline">View Full Dossier <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Modal Functions
+        function openModal(entity) {
+            document.getElementById('modal-title').innerText = entity.label;
+            document.getElementById('modal-subtitle').innerText = \`Primary IOC: \${entity.data} | Type: \${entity.type}\`;
+            
+            document.getElementById('modal-content').innerHTML = \`
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-500 uppercase font-bold">AML Risk Score</p>
+                        <p class="text-2xl font-black text-red-600">\${entity.score}/100</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p class="text-xs text-slate-500 uppercase font-bold">Ontology Class</p>
+                        <p class="text-lg font-bold">\${entity.type}</p>
+                    </div>
+                </div>
+                
+                <h3 class="text-lg font-bold mt-6 border-b pb-2">Intelligence Matrix</h3>
+                <div class="bg-slate-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto shadow-inner">
+                    <pre>
+[SYSTEM] querying NEMESIS INTELLIGENCE ONTOLOGY v3.0...
+> ENTITY_RESOLVED: \${entity.label}
+> IOC_DATA: \${entity.data}
+> CROSS_CHAIN_LINKS: DETECTED (3)
+> DARKNET_FORUM_MENTIONS: 14
+                    </pre>
+                </div>
+                
+                <h3 class="text-lg font-bold mt-6 border-b pb-2">Associated Artifacts</h3>
+                <ul class="space-y-2 text-sm text-slate-600">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-envelope text-slate-400"></i> admin@\${entity.label.toLowerCase().replace(' ','')}.net</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-server text-slate-400"></i> 104.21.XX.XX (Cloudflare)</li>
+                </ul>
+            \`;
+            
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById('sliding-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('sliding-modal').classList.remove('active');
+        }
+
+        // Live Telemetry Stream
+        function appendLiveLog(log) {
+            const tbody = document.getElementById('live-table-body');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors";
+            tr.innerHTML = \`
+                <td class="px-4 py-2 font-mono text-xs text-slate-500">\${new Date(log.timestamp).toLocaleTimeString()}</td>
+                <td class="px-4 py-2"><span class="px-2 py-1 bg-slate-100 rounded text-xs border border-slate-200">\${log.source}</span></td>
+                <td class="px-4 py-2 font-semibold text-xs">\${log.type}</td>
+                <td class="px-4 py-2 font-mono text-xs text-blue-600 truncate max-w-xs">\${log.data}</td>
+            \`;
+            tbody.prepend(tr);
+            if (tbody.children.length > 8) tbody.removeChild(tbody.lastChild);
+            
+            // Add to graph
+            if(!nodes.get(log.data)) {
+                nodes.add({ id: log.data, label: log.data.substring(0,8)+'...', color: { background: '#bfdbfe', border: '#3b82f6' } });
+                if(nodes.length > 1) {
+                    const existingIds = nodes.getIds();
+                    const randomTarget = existingIds[Math.floor(Math.random() * (existingIds.length-1))];
+                    edges.add({ from: log.data, to: randomTarget });
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initGraph();
+            
+            // Fetch live data or simulate if backend not ready
+            setInterval(async () => {
+                try {
+                    const res = await fetch('/api/darknet/live');
+                    if (res.ok) {
+                        const logs = await res.json();
+                        if (logs && logs.length > 0) {
+                           appendLiveLog(logs[0]);
+                        }
+                    } else {
+                       throw new Error("Backend not connected");
+                    }
+                } catch(e) {
+                   // Simulate
+                   appendLiveLog({
+                        timestamp: new Date().getTime(),
+                        source: 'TOR_SPIDER',
+                        type: ['WALLET', 'EMAIL', 'IP', 'DOMAIN'][Math.floor(Math.random()*4)],
+                        data: '0x' + Math.random().toString(16).substr(2, 10)
+                    });
+                }
+                
+            }, 3000);
+        });
+    </script>
+
+<!-- GLOBAL NEMESIS AJAX LOADER -->
+<div id="global-ajax-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center; flex-direction: column;">
+    <img src="assets/butterfly_transparent.png" style="width: 100px; height: 100px; animation: pulse-loader 1.5s infinite; filter: drop-shadow(0 0 20px rgba(6,182,212,0.8));">
+    <div style="color: #06b6d4; margin-top: 20px; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px #06b6d4;">NEMESIS SINGULARITY KERNEL</div>
+    <style>
+        @keyframes pulse-loader {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 30px rgba(6,182,212,1)); }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+    </style>
+</div>
+<script>
+    (function() {
+        if (window._nemesisLoaderInitialized) return;
+        window._nemesisLoaderInitialized = true;
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const loader = document.getElementById('global-ajax-loader');
+            if (loader) loader.style.display = 'flex';
+            try {
+                const response = await originalFetch.apply(this, args);
+                return response;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        };
+    })();
+</script>
+</body>
+
+</html>

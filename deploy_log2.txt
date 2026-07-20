@@ -1,0 +1,16 @@
+
+ ⛅️ wrangler 4.106.0 (update available 4.112.0)
+───────────────────────────────────────────────
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mWarning: Your working directory is a git repo and has uncommitted changes[0m
+
+  To silence this warning, pass in --commit-dirty=true
+
+
+✨ Compiled Worker successfully
+Uploading... (21/22)
+Uploading... (22/22)
+✨ Success! Uploaded 1 files (21 already uploaded) (1.57 sec)
+
+✨ Uploading Functions bundle
+🌎 Deploying...
+✨ Deployment complete! Take a peek over at https://94141475.nemesis-id-frontend.pages.dev

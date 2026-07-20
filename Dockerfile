@@ -1,21 +1,30 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements_docker.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-RUN playwright install chromium --with-deps
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# Copy the source code
+# Copy source code
 COPY . /app
 
 # Expose the API port
 EXPOSE 8000
 
-# Set environment variables for production (can be overridden by the runtime)
-ENV HOST=0.0.0.0
-ENV PORT=8000
-
-# Start the FastAPI application via uvicorn directly
-CMD ["uvicorn", "nemesis_core:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Start Uvicorn
+CMD ["uvicorn", "nemesis_core:fastapi_app", "--host", "0.0.0.0", "--port", "8000"]

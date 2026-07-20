@@ -1,4 +1,3 @@
-import { Router } from 'itty-router';
 export { InvestigationSession } from './InvestigationSession';
 
 export interface Env {
@@ -9,8 +8,6 @@ export interface Env {
   VERCEL_API_URL?: string;
 }
 
-const router = Router();
-
 // Handle CORS for browser
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,59 +15,85 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-router.options('*', () => new Response(null, { headers: corsHeaders }));
-
-// WebSocket connection endpoint for Tracer
-router.get('/api/ws/trace', (request: Request, env: Env) => {
-  const upgradeHeader = request.headers.get('Upgrade');
-  if (!upgradeHeader || upgradeHeader !== 'websocket') {
-    return new Response('Expected Upgrade: websocket', { status: 426 });
-  }
-
-  // Bind to a global session for the tracer dashboard
-  const id = env.INVESTIGATION_SESSION.idFromName('global-live-feed');
-  const stub = env.INVESTIGATION_SESSION.get(id);
-
-  return stub.fetch(request);
-});
-
-// Webhook endpoint for Python API to broadcast to all connected WebSockets
-router.post('/internal/broadcast', async (request: Request, env: Env) => {
-  const id = env.INVESTIGATION_SESSION.idFromName('global-live-feed');
-  const stub = env.INVESTIGATION_SESSION.get(id);
-  
-  return stub.fetch(request);
-});
-
-// Endpoint to start a new trace (enqueues to Cloudflare Queues)
-router.post('/api/trace/start', async (request: Request, env: Env) => {
-  try {
-    const body = await request.json();
-    
-    // Add to Cloudflare Queue for background processing by the Python AI Router
-    if (env.TRACE_QUEUE) {
-      await env.TRACE_QUEUE.send(body);
-    } else {
-      console.warn("TRACE_QUEUE binding missing, bypassing queue.");
-      // Fallback: If Queue is not bound, we could forward directly to Python API
-      // await fetch(`${env.PYTHON_API_URL}/api/trace`, { method: 'POST', body: JSON.stringify(body) });
-    }
-
-    return new Response(JSON.stringify({ status: 'queued', message: 'Trace initiated' }), {
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 400, headers: corsHeaders });
-  }
-});
-
 // Main Fetch Handler
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    return router.handle(request, env, ctx).catch((err: Error) => {
+    try {
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders });
+      }
+
+      const url = new URL(request.url);
+
+      if (request.method === 'GET' && url.pathname === '/api/health') {
+        return new Response(JSON.stringify({ status: 'ok', version: 'v1.0' }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/ws/trace') {
+        const upgradeHeader = request.headers.get('Upgrade');
+        if (!upgradeHeader || upgradeHeader !== 'websocket') {
+          return new Response('Expected Upgrade: websocket', { status: 426, headers: corsHeaders });
+        }
+
+        const id = env.INVESTIGATION_SESSION.idFromName('global-live-feed');
+        const stub = env.INVESTIGATION_SESSION.get(id);
+        return stub.fetch(request);
+      }
+
+      if (request.method === 'POST' && url.pathname === '/internal/broadcast') {
+        const id = env.INVESTIGATION_SESSION.idFromName('global-live-feed');
+        const stub = env.INVESTIGATION_SESSION.get(id);
+        return stub.fetch(request);
+      }
+
+      if (request.method === 'POST' && (url.pathname === '/api/trace/start' || url.pathname === '/api/start_trace')) {
+        const body = await request.json();
+        
+        if (env.TRACE_QUEUE) {
+          await env.TRACE_QUEUE.send(body);
+        } else {
+          console.warn("TRACE_QUEUE binding missing, bypassing queue.");
+        }
+
+        return new Response(JSON.stringify({ status: 'queued', message: 'Trace initiated' }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      // Proxy all other /api/ requests to the Python backend
+      if (url.pathname.startsWith('/api/')) {
+        const targetUrl = new URL(url.pathname + url.search, env.PYTHON_API_URL || 'https://projectnemesis.onrender.com');
+        try {
+          const proxyReq = new Request(targetUrl.toString(), {
+            method: request.method,
+            headers: request.headers,
+            body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
+          });
+          
+          const response = await fetch(proxyReq);
+          const newHeaders = new Headers(response.headers);
+          newHeaders.set('Access-Control-Allow-Origin', '*');
+          
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders
+          });
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: 'Proxy failed', details: err.message }), { 
+            status: 502, 
+            headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+          });
+        }
+      }
+
+      return new Response('Not Found', { status: 404, headers: corsHeaders });
+    } catch (err: any) {
       console.error(err);
-      return new Response('Internal Server Error', { status: 500, headers: corsHeaders });
-    });
+      return new Response(`Internal Server Error: ${err.message}\n${err.stack}`, { status: 500, headers: corsHeaders });
+    }
   },
 
   async queue(batch: MessageBatch<any>, env: Env): Promise<void> {

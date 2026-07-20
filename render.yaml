@@ -2,16 +2,23 @@ services:
   - type: web
     name: nemesis-backend
     env: docker
-    plan: free
-    dockerCommand: uvicorn nemesis_core:app --host 0.0.0.0 --port 8000
+    region: ohio
+    plan: standard
+    healthCheckPath: /
     envVars:
-      - key: BITQUERY_APIV2_TOKEN
-        sync: false
+      - key: PORT
+        value: 8000
+      - key: NODE_ENV
+        value: production
       - key: ETHERSCAN_API_KEY
         sync: false
       - key: POLYGONSCAN_API_KEY
         sync: false
-      - key: OPENAI_API_KEY
+      - key: BSCSCAN_API_KEY
         sync: false
-      - key: GEMINI_API_KEY
+      - key: GEMINI_API_KEYS
+        sync: false
+      - key: DATABASE_MONGO_URL
+        sync: false
+      - key: POSTGRES_URI
         sync: false

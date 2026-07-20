@@ -1,34 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700;800&display=swap');
 
-/* Global Light Theme Overrides */
+/* Global Dark Theme Overrides */
 body {
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #0f172a; /* Slate 900 */
+    color: #e2e8f0; /* Slate 200 */
     font-family: 'Inter', sans-serif;
 }
 
 .nemesis-header-light {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(15, 23, 42, 0.85); /* Slate 900 */
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #334155; /* Slate 700 */
     position: sticky;
     top: 0;
     z-index: 50;
 }
 
 .nemesis-footer-light {
-    background: #ffffff;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
+    background: #0f172a;
+    border-top: 1px solid #334155;
+    color: #94a3b8; /* Slate 400 */
     padding: 20px;
     text-align: center;
     font-size: 0.875rem;
 }
 
 .light-glass-panel {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    background: rgba(30, 41, 59, 0.7); /* Slate 800 */
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
     border-radius: 1rem;
 }
 
@@ -43,13 +44,13 @@ body {
     display: inline-block; vertical-align: middle; margin-right: 4px;
 }
 
-.bg-slate-900 { background-color: #ffffff !important; }
-.text-white { color: #0f172a !important; }
-.border-slate-700 { border-color: #e2e8f0 !important; }
-.text-slate-400 { color: #64748b !important; }
-.bg-slate-800 { background-color: #f1f5f9 !important; }
-.hover\:bg-slate-700:hover { background-color: #e2e8f0 !important; }
-.text-slate-300 { color: #475569 !important; }
+.bg-slate-900 { background-color: #0f172a !important; }
+.text-white { color: #f8fafc !important; }
+.border-slate-700 { border-color: #334155 !important; }
+.text-slate-400 { color: #94a3b8 !important; }
+.bg-slate-800 { background-color: #1e293b !important; }
+.hover\:bg-slate-700:hover { background-color: #334155 !important; }
+.text-slate-300 { color: #cbd5e1 !important; }
 
 .accent-blue { color: #2563eb; }
 .accent-bg-blue { background-color: #2563eb; color: #ffffff !important; }

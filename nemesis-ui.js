@@ -16,7 +16,7 @@ function injectGlobalNavigation() {
                 </h1>
             </div>
             <nav class="flex gap-6 font-bold text-sm tracking-wide text-slate-600">
-                <a href="/" class="hover:text-blue-600 transition">HOME</a>
+                <a href="/landing.html" class="hover:text-blue-600 transition">HOME</a>
                 <a href="/about.html" class="hover:text-blue-600 transition">ABOUT</a>
                 <a href="/tracer.html" class="hover:text-blue-600 transition">TRACER</a>
                 <a href="/nemesis_id.html" class="hover:text-blue-600 transition">NEMESIS ID</a>

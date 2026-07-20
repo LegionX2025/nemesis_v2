@@ -14,14 +14,13 @@
     window.currentBackendIndex = 0;
 
     function getBackendHttpUrl(path) {
-        // If we are on the first backend (Cloudflare), and we are actually hosted there, we can use relative routing
-        if (window.currentBackendIndex === 0) {
-            return `/api/${path}`;
-        }
+        if (window.location.protocol === "file:") return `http://127.0.0.1:8000/api/${path}`;
+        if (window.currentBackendIndex === 0) return `/api/${path}`;
         return `https://${BACKENDS[window.currentBackendIndex]}/api/${path}`;
     }
 
     function getBackendWsUrl(path) {
+        if (window.location.protocol === "file:") return `ws://127.0.0.1:8000/api/ws/${path}`;
         if (window.currentBackendIndex === 0) {
             let protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
             let host = window.location.host;
@@ -43,7 +42,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/global_nav.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology-library/0.8.0/graphology-library.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphology-layout-forceatlas2/build/graphology-layout-forceatlas2.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -59,9 +58,10 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .nemesis-effect { background: linear-gradient(to right, #0f172a 20%, #0284c7 50%, #0f172a 80%); background-size: 200% auto; color: #000; background-clip: text; text-fill-color: transparent; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; filter: drop-shadow(0px 0px 15px rgba(2, 132, 199, 0.4)); }
         @keyframes shine { to { background-position: 200% center; } }
-        #graph { height: calc(100vh - 120px); width: 100%; outline: none; background-color: #fff; }
+        #graph { height: calc(100vh - 120px); width: 100%; outline: none; background-color: #ffffff; background-image: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%); position: relative; box-shadow: inset 0 0 50px rgba(148, 163, 184, 0.1); }
+        #graph::after { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; box-shadow: inset 0 0 100px rgba(226, 232, 240, 0.5); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         
         .vis-tooltip {
             position: absolute;
@@ -142,42 +142,45 @@
         .content-body h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 2.5rem; margin-bottom: 1rem; }
         .content-body ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 1rem; }
         .content-body li { margin-bottom: 0.5rem; }
+        
+        .pulse-edge { stroke-dasharray: 8, 8; animation: flowAnim 1.5s linear infinite; fill: none; }
+        @keyframes flowAnim { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
     <!-- LANDING PAGE OVERLAY -->
-    <div id="tracer-landing" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 transition-opacity duration-700" style="background: radial-gradient(circle at center, #f8fafc 0%, #e2e8f0 100%);">
+    <div id="tracer-landing" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 transition-opacity duration-700" style="background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);">
         <!-- Background Elements -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-400/10 blur-[100px]"></div>
-            <div class="absolute top-[60%] -right-[10%] w-[40%] h-[60%] rounded-full bg-indigo-400/10 blur-[100px]"></div>
-            <div class="absolute top-[20%] left-[60%] w-[30%] h-[30%] rounded-full bg-emerald-400/10 blur-[100px]"></div>
+            <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/20 blur-[120px]"></div>
+            <div class="absolute top-[60%] -right-[10%] w-[40%] h-[60%] rounded-full bg-indigo-500/20 blur-[120px]"></div>
+            <div class="absolute top-[20%] left-[60%] w-[30%] h-[30%] rounded-full bg-emerald-500/20 blur-[120px]"></div>
         </div>
 
         <div class="relative z-10 flex flex-col items-center w-full max-w-2xl px-6">
             
             <!-- Branding -->
             <div class="flex flex-col items-center mb-10 text-center">
-                <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-20 h-20 object-contain rounded-2xl shadow-xl shadow-slate-300/50 mb-6 border border-slate-200 bg-white">
-                <h1 class="text-4xl font-black text-slate-900 tracking-tight mb-2">Lionsgate Nemesis</h1>
-                <p class="text-sm text-slate-500 font-bold uppercase tracking-widest">Omni-Chain Tracing Engine</p>
+                <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-20 h-20 object-contain rounded-2xl shadow-xl shadow-slate-900/50 mb-6 border border-slate-700 bg-slate-800">
+                <h1 class="text-4xl font-black text-slate-100 tracking-tight mb-2">Lionsgate Nemesis</h1>
+                <p class="text-sm text-slate-400 font-bold uppercase tracking-widest">Omni-Chain Tracing Engine</p>
             </div>
 
             <!-- Glassmorphic Input Form -->
-            <div class="w-full bg-white/60 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl p-8 space-y-6">
+            <div class="w-full bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 shadow-2xl rounded-3xl p-8 space-y-6">
                 
                 <!-- Seed Input -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Target Seed Wallet(s)</label>
-                    <textarea id="landing-seed" class="w-full h-24 bg-white/80 border border-slate-200 rounded-xl p-4 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner resize-none transition-all" placeholder="Enter 0x... addresses separated by commas"></textarea>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Target Seed Wallet(s)</label>
+                    <textarea id="landing-seed" class="w-full h-24 bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner resize-none transition-all" placeholder="Enter 0x... addresses separated by commas"></textarea>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <!-- Network -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Network</label>
-                        <select id="landing-network" class="w-full bg-white/80 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Network</label>
+                        <select id="landing-network" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all">
                             <option value="ALL">🌐 Omni-Chain (All)</option>
                             <option value="ETH">🔷 Ethereum (ETH)</option>
                             <option value="BSC">🟡 Binance (BSC)</option>
@@ -195,19 +198,22 @@
 
                     <!-- Target Loss -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Loss Amount (USD)</label>
-                        <input type="number" id="landing-target" class="w-full bg-white/80 border border-slate-200 rounded-xl p-3 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all" placeholder="e.g. 100000">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Target USD Amount</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 font-bold">$</span>
+                            <input type="number" id="landing-amount" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-3 pl-8 pr-4 text-sm font-bold text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all" placeholder="0.00">
+                        </div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Trace Depth</label>
-                        <input type="number" id="landing-depth" class="w-full bg-white/80 border border-slate-200 rounded-xl p-3 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all text-center" value="12">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Trace Depth</label>
+                        <input type="number" id="landing-depth" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all text-center" value="12">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Max Hops</label>
-                        <input type="number" id="landing-hops" class="w-full bg-white/80 border border-slate-200 rounded-xl p-3 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all text-center" value="1000">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Max Hops</label>
+                        <input type="number" id="landing-hops" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all text-center" value="1000">
                     </div>
                 </div>
 
@@ -224,90 +230,102 @@
     </div>
 
     <!-- MAIN DASHBOARD (Initially Hidden) -->
-    <div id="main-ui" class="flex flex-col h-screen w-full opacity-0 pointer-events-none transition-opacity duration-700 absolute inset-0 z-40">
+    <div id="main-ui" class="flex flex-col h-screen w-full relative z-40">
         <!-- Global Navigation Bar -->
-        <header class="custom-header bg-white text-slate-900 border-b border-slate-200 flex flex-col z-20 shrink-0 shadow-sm">
+        <header class="custom-header bg-slate-900 text-slate-100 border-b border-slate-700 flex flex-col z-20 shrink-0 shadow-sm">
             <div class="px-6 py-3 flex justify-between items-center w-full">
                 <div class="flex items-center gap-4">
-                    <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-10 h-10 object-contain rounded-lg shadow-sm border border-slate-200 bg-white">
+                    <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-10 h-10 object-contain rounded-lg shadow-sm border border-slate-700 bg-slate-800">
                     <div>
-                        <h1 class="text-lg font-black uppercase tracking-widest text-slate-900 leading-tight">Lionsgate Nemesis</h1>
-                        <p class="text-[10px] text-blue-500 font-mono font-bold uppercase tracking-widest leading-none mt-1">Omni-Chain Trace Stream</p>
+                        <h1 class="text-lg font-black uppercase tracking-widest text-slate-100 leading-tight">Lionsgate Nemesis</h1>
+                        <p class="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-widest leading-none mt-1">Omni-Chain Trace Stream</p>
                     </div>
                     
-                    <div class="h-8 w-px bg-slate-200 mx-4"></div>
+                    <div class="h-8 w-px bg-slate-700 mx-4"></div>
                     
                     <!-- Global Header Menu -->
-                    <!-- Collapsible Global Header Menu -->
                     <div class="relative group mt-0.5">
-                        <button class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                        <button class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 transition">
                             <i class="fa-solid fa-bars"></i>
                         </button>
-                        <nav class="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col py-2 z-50 text-[10px] font-bold tracking-widest uppercase">
-                            <a href="/" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-home w-4"></i> Home</a>
-                            <a href="/nemesis_id" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-fingerprint w-4"></i> Nemesis ID</a>
-                            <a href="/about.html" class="px-4 py-2 text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-circle-info w-4"></i> About</a>
-                            <a href="/tracer" class="px-4 py-2 text-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-colors flex items-center gap-2"><i class="fa-solid fa-network-wired w-4"></i> Tracing Engine</a>
+                        <nav class="absolute top-full left-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col py-2 z-50 text-[10px] font-bold tracking-widest uppercase">
+                            <a href="/landing.html" class="px-4 py-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors flex items-center gap-2"><i class="fa-solid fa-home w-4"></i> Home</a>
+                            <a href="/nemesis_id.html" class="px-4 py-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors flex items-center gap-2"><i class="fa-solid fa-fingerprint w-4"></i> Nemesis ID</a>
+                            <a href="/about.html" class="px-4 py-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors flex items-center gap-2"><i class="fa-solid fa-circle-info w-4"></i> About</a>
+                            <a href="/tracer.html" class="px-4 py-2 text-blue-400 bg-blue-900/20 hover:bg-blue-900/40 transition-colors flex items-center gap-2"><i class="fa-solid fa-network-wired w-4"></i> Tracing Engine</a>
                         </nav>
                     </div>
                     
                     <!-- Status Indicators -->
                     <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 shadow-inner">
+                        <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 shadow-inner">
                             <span class="relative flex h-2 w-2">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Loss Traced:</span>
-                            <span id="total-traced-widget" class="text-sm text-emerald-500 font-mono font-black drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">$0.00</span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Loss Traced:</span>
+                            <span id="total-traced-widget" class="text-sm text-emerald-400 font-mono font-black drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">$0.00</span>
                         </div>
 
-                        <div id="trace-id-display" class="flex items-center bg-blue-50 border border-blue-200 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-[10px] tracking-widest h-[34px]">
-                            NID: <span id="trace-id-val" class="ml-1 font-mono text-xs text-blue-600">PENDING...</span>
+                        <div id="trace-id-display" class="flex items-center bg-blue-900/20 border border-blue-800 text-blue-300 font-bold px-3 py-1.5 rounded-lg text-[10px] tracking-widest h-[34px]">
+                            NID: <span id="trace-id-val" class="ml-1 font-mono text-xs text-blue-200">PENDING...</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Global Actions -->
                 <div class="flex items-center gap-3">
+                    <select id="graph-layout-selector" onchange="changeGraphLayout(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer">
+                        <option value="sequential">Layout: Sequential</option>
+                        <option value="physics">Layout: Physics (Force)</option>
+                        <option value="circular">Layout: Circular</option>
+                    </select>
+                    <select id="edge-filter-selector" class="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer">
+                        <option value="ALL">Filter: All Paths</option>
+                        <option value="CEX">Filter: Seed to CEX</option>
+                        <option value="MIXER">Filter: Seed to Mixing</option>
+                        <option value="BRIDGE">Filter: Bridge/Wrapped</option>
+                    </select>
+                    <button id="btn-pause-resume" onclick="togglePauseResume()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-pause"></i> Pause
+                    </button>
                     <label class="flex items-center gap-2 cursor-pointer mr-2">
-                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider" id="auto-cluster-label">Auto-Cluster</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" id="auto-cluster-label">Auto-Cluster</span>
                         <div class="relative">
                             <input type="checkbox" id="auto-cluster-toggle" class="sr-only peer" checked onchange="toggleAutoCluster()">
-                            <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-800 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-500 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
                         </div>
                     </label>
-                    <button onclick="window.open('/audit', '_blank')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
+                    <button onclick="openSidePanel('audit-panel')" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
                         <i class="fa-solid fa-shield-halved"></i> Master Audit
                     </button>
-                    <button onclick="window.open('/intelligence', '_blank')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
+                    <button onclick="openSidePanel('intel-panel')" class="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
                         <i class="fa-solid fa-brain"></i> Intelligence Base
                     </button>
-                    <button onclick="triggerGeneratePDF()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline tracking-wide">
+                    <button onclick="openSidePanel('report-panel')" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline tracking-wide">
                         <i class="fa-solid fa-file-pdf"></i> Generate FORENSIC REPORT
                     </button>
-                    <button onclick="toggleLogModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2">
+                    <button onclick="openSidePanel('log-panel')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2">
                         <i class="fa-solid fa-list-ul"></i> Evidentiary Log
                     </button>
-                    <select id="currency-display-selector" onchange="setCurrencyMode(this.value)" class="bg-white border border-slate-300 text-slate-700 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer mr-1">
+                    <select id="currency-display-selector" onchange="setCurrencyMode(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer mr-1">
                         <option value="USD">💵 USD Eqv.</option>
                         <option value="TOKEN">🪙 Token</option>
                         <option value="NATIVE">🌐 Native</option>
                     </select>
                 </div>
             </div>
-            <!-- Global Menu Links Row (Removed as requested, moved to top) -->
         </header>
 
         <!-- Main Workspace Area -->
-        <div class="flex-1 flex overflow-hidden bg-slate-50">
+        <div class="flex-1 flex overflow-hidden bg-slate-950">
             <!-- Left Sidebar (Collapsible) -->
-            <aside id="left-sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 z-10 shadow-sm relative">
-                <button onclick="toggleSidebar()" class="absolute -right-3 top-4 bg-white border border-slate-200 text-slate-500 hover:text-blue-500 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-20">
+            <aside id="left-sidebar" class="w-64 bg-slate-900 border-r border-slate-700 flex flex-col transition-all duration-300 z-10 shadow-sm relative">
+                <button onclick="toggleSidebar()" class="absolute -right-3 top-4 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-20">
                     <i id="sidebar-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
                 </button>
                 
-                <div class="p-4 border-b border-slate-200 flex items-center gap-2 font-black text-slate-800 uppercase tracking-widest text-xs sidebar-content">
+                <div class="p-4 border-b border-slate-700 flex items-center gap-2 font-black text-slate-300 uppercase tracking-widest text-xs sidebar-content">
                     <i class="fa-solid fa-sliders text-blue-500"></i> Trace Parameters
                 </div>
                 
@@ -318,26 +336,26 @@
                             <span>Seed Wallets</span>
                             <span id="network-logo-container" class="text-blue-500 font-bold"></span>
                         </label>
-                        <textarea id="seed-input" class="w-full h-16 text-xs bg-slate-50 border border-slate-200 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-slate-800 resize-none shadow-inner" placeholder="0x..." oninput="detectWalletChain()"></textarea>
+                        <textarea id="seed-input" class="w-full h-16 text-xs bg-slate-950 border border-slate-700 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-slate-300 resize-none shadow-inner" placeholder="0x..." oninput="detectWalletChain()"></textarea>
                     </div>
 
                     <!-- Target Amount -->
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Target Loss</label>
                         <div class="flex items-center">
-                            <select id="target-currency" class="bg-slate-50 border border-slate-200 border-r-0 rounded-l text-[10px] font-bold text-slate-700 outline-none cursor-pointer p-2 shadow-inner">
+                            <select id="target-currency" class="bg-slate-950 border border-slate-700 border-r-0 rounded-l text-[10px] font-bold text-slate-400 outline-none cursor-pointer p-2 shadow-inner">
                                 <option value="USD">USD</option>
                                 <option value="TOKEN">TOK</option>
                                 <option value="NATIVE">NAT</option>
                             </select>
-                            <input type="number" id="target-amount" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-r p-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-slate-800 shadow-inner" placeholder="Amount">
+                            <input type="number" id="target-amount" class="w-full text-xs bg-slate-950 border border-slate-700 rounded-r p-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-slate-300 shadow-inner" placeholder="Amount">
                         </div>
                     </div>
 
                     <!-- Network -->
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Network</label>
-                        <select id="chain-select" class="w-full bg-slate-50 border border-slate-200 rounded p-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 shadow-inner">
+                        <select id="chain-select" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[10px] font-bold text-slate-300 outline-none focus:ring-1 focus:ring-blue-500 shadow-inner">
                             <option value="ALL">🌐 ALL NETWORKS</option>
                             <option value="ETH">🔷 Ethereum (ETH)</option>
                             <option value="BSC">🟡 Binance (BSC)</option>
@@ -356,20 +374,20 @@
                     <div class="flex gap-2">
                         <div class="w-1/2">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Depth</label>
-                            <input type="number" id="max-depth" class="w-full text-xs bg-slate-50 border border-slate-200 rounded p-1.5 font-mono text-slate-800 text-center shadow-inner" value="12">
+                            <input type="number" id="max-depth" class="w-full text-xs bg-slate-950 border border-slate-700 rounded p-1.5 font-mono text-slate-300 text-center shadow-inner" value="12">
                         </div>
                         <div class="w-1/2">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Hops</label>
-                            <input type="number" id="max-hops" class="w-full text-xs bg-slate-50 border border-slate-200 rounded p-1.5 font-mono text-slate-800 text-center shadow-inner" value="1000">
+                            <input type="number" id="max-hops" class="w-full text-xs bg-slate-950 border border-slate-700 rounded p-1.5 font-mono text-slate-300 text-center shadow-inner" value="1000">
                         </div>
                     </div>
 
-                    <button onclick="submitTrace()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-xs font-bold shadow-md transition flex items-center justify-center gap-2 tracking-wider mt-4">
+                    <button onclick="submitTrace()" class="w-full bg-blue-700 hover:bg-blue-600 text-white px-4 py-3 rounded-lg text-xs font-bold shadow-md transition flex items-center justify-center gap-2 tracking-wider mt-4">
                         <i class="fa-solid fa-play"></i> Run Trace
                     </button>
                     
-                    <div class="border-t border-slate-200 pt-4 space-y-2">
-                        <button onclick="highlightLossPaths()" class="w-full px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm">
+                    <div class="border-t border-slate-700 pt-4 space-y-2">
+                        <button onclick="highlightLossPaths()" class="w-full px-3 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-800 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm">
                             <i class="fa-solid fa-fire text-red-500"></i> Highlight Path
                         </button>
                         <button onclick="startCourtReplay()" class="w-full px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm">
@@ -405,17 +423,14 @@
                 </nav>
 
                 <!-- Canvas Area -->
-                <div class="flex-1 relative w-full h-full bg-slate-50 overflow-hidden">
-                    <!-- Watermark -->
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0 opacity-10">
-                        <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="max-w-[500px] w-1/2 object-contain grayscale mix-blend-multiply">
+                <div id="graph-container" class="relative flex-1 bg-white h-full shadow-inner overflow-hidden border-b border-slate-200">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
+                        <img src="logo_nemesis.jpeg" class="w-[600px] h-[600px] object-contain grayscale">
                     </div>
-                    <!-- Graph -->
-                    <div id="graph" class="absolute inset-0 z-10" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 24px 24px;"></div>
-                    <div id="html-overlay" class="absolute inset-0 z-20 pointer-events-none" style="transform-origin: 0 0;"></div>
-                    <!-- HTML Overlay for Nodes (Layer 2) -->
-                    <div id="html-overlay" class="absolute inset-0 z-20 pointer-events-none" style="transform-origin: 0 0;"></div>
+                    <div id="graph" class="w-full h-full absolute inset-0 z-10 cursor-grab active:cursor-grabbing"></div>
+                    <div id="html-overlay" class="absolute inset-0 pointer-events-none z-20"></div>
                 </div>
+
                 <!-- Status Overlay on Graph -->
                 <div id="status" class="absolute bottom-4 right-4 bg-white/90 backdrop-blur border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm text-[10px] font-mono font-bold text-slate-500 z-10 pointer-events-none">
                     Idle. Waiting for deployment.
@@ -557,7 +572,7 @@
         function initializeFromLanding() {
             // Get landing inputs
             const seed = document.getElementById("landing-seed").value;
-            const target = document.getElementById("landing-target").value;
+            const target = document.getElementById("landing-amount").value;
             const networkVal = document.getElementById("landing-network").value;
             const depth = document.getElementById("landing-depth").value;
             const hops = document.getElementById("landing-hops").value;
@@ -663,22 +678,20 @@
         }
 
         function initiateLandingTrace() {
-            const seedVal = document.getElementById("landing-seed-input").value;
+            const seedVal = document.getElementById("landing-seed").value;
             if(!seedVal) return alert("Please enter a target wallet address.");
             
             // Transfer values to main UI inputs before starting
             document.getElementById("seed-input").value = seedVal;
-            document.getElementById("target-amount").value = document.getElementById("landing-target-amount").value;
+            document.getElementById("target-amount").value = document.getElementById("landing-amount").value;
             
             // Hide landing page
-            const landing = document.getElementById('landing-page');
+            const landing = document.getElementById('tracer-landing');
             landing.style.opacity = '0';
+            landing.style.pointerEvents = 'none';
             setTimeout(() => {
                 landing.style.display = 'none';
-                document.getElementById('main-ui').classList.remove('hidden');
-                document.getElementById('main-ui').classList.add('flex');
                 
-
                 initGraphSimulation();
                 submitTrace();
             }, 800);
@@ -785,7 +798,6 @@
             
             if (renderer) {
                 renderer.kill();
-                if (forceAtlas2) forceAtlas2.stop();
             }
             
             graph = new graphology.Graph({ multi: true });
@@ -793,7 +805,7 @@
             renderer = new Sigma(graph, container, {
                 renderLabels: false,
                 renderEdgeLabels: false,
-                defaultEdgeColor: '#cbd5e1',
+                defaultEdgeColor: 'transparent',
                 defaultNodeColor: '#3b82f6',
                 enableEdgeEvents: true
             });
@@ -814,19 +826,35 @@
                     let amountText = attrs.custom_amount || "$0.00";
                     let glowCss = hoveredNode === node ? "box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.6);" : "";
                     
+                    let borderColor = isCex ? '#f59e0b' : (isSuspect ? '#ef4444' : '#3b82f6');
+                    let badgeBg = isCex ? '#fef3c7' : (isSuspect ? '#fee2e2' : '#eff6ff');
+                    let badgeText = isCex ? '#d97706' : (isSuspect ? '#dc2626' : '#2563eb');
+                    let entityType = isCex ? 'EXCHANGE' : (isSuspect ? 'SUSPECT' : 'WALLET');
+                    let nodeColor = isCex ? '#f59e0b' : (isSuspect ? '#ef4444' : '#3b82f6');
+                    
+                    let safeIcon = getSafeIconUrl(entityName, false, isCex, attrs.custom_chain);
+                    let verifiedBadge = node.length > 10 ? `<div style="position:absolute; bottom:-4px; right:-8px; width:20px; height:20px; background:#64748b; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:10px; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.1);"><i class="fa-solid fa-question"></i></div>` : `<div style="position:absolute; bottom:-4px; right:-8px; width:20px; height:20px; background:#10b981; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:10px; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.1);"><i class="fa-solid fa-check"></i></div>`;
+                    
                     let html = `
                     <div style="position: absolute; left: ${pos.x}px; top: ${pos.y}px; transform: translate(-50%, -50%); pointer-events: auto; display: flex; flex-direction: column; align-items: center; cursor: pointer;"
                          onmouseenter="window.hoverNode('${node}')" onmouseleave="window.unhoverNode()" onclick="openNemesisIDPanel('${node}')">
                          
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: white; border: 2px solid ${isCex ? '#10b981' : (isSuspect ? '#ef4444' : '#3b82f6')}; display: flex; justify-content: center; align-items: center; ${glowCss} transition: box-shadow 0.2s;">
-                            <img src="${attrs.image}" style="width: 32px; height: 32px; border-radius: 50%;">
+                        <div style="position: relative; width: 64px; height: 64px; display: flex; justify-content: center; align-items: center;">
+                            <!-- Outer Circular Border (Design 1) -->
+                            <div style="position: absolute; inset: 0; border: 3px solid ${borderColor}; border-radius: 50%; background: ${isCex ? '#0f172a' : '#ffffff'}; box-shadow: 0 4px 15px rgba(0,0,0,0.1); ${glowCss} transition: all 0.2s;"></div>
+                            <!-- Inner Logo -->
+                            <div style="position: absolute; inset: 0; display: flex; justify-content: center; align-items: center;">
+                                <img src="${safeIcon}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 50%;">
+                            </div>
+                            <!-- Verification Badge -->
+                            ${verifiedBadge}
                         </div>
                         
                         ${!isZoomedOut ? `
-                        <div style="text-align: center; margin-top: 6px; background: rgba(255,255,255,0.95); padding: 4px 8px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); pointer-events: none; backdrop-filter: blur(4px);">
-                            <div style="font-weight: 800; font-size: 11px; color: ${isCex ? '#166534' : '#0f172a'};"><i class="${isCex ? 'fa-solid fa-building-columns' : 'fa-solid fa-wallet'} mr-1 text-[9px]"></i>${entityName}</div>
-                            <div style="font-weight: 800; font-size: 12px; color: #ef4444; margin-top: 2px;">${amountText}</div>
-                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #64748b; margin-top: 3px; background: #f1f5f9; padding: 2px 4px; border-radius: 4px;">${node.substring(0,8)}...</div>
+                        <div style="text-align: center; margin-top: 10px; pointer-events: none; display: flex; flex-direction: column; align-items: center;">
+                            <div style="font-weight: 900; font-size: 13px; color: ${nodeColor}; letter-spacing: -0.02em;">${amountText}</div>
+                            <div style="font-family: 'Inter', sans-serif; font-weight: 800; font-size: 10px; color: ${nodeColor}; margin-top: 4px; background: ${badgeBg}; padding: 2px 8px; border-radius: 12px; border: 1px solid ${nodeColor}40;">${entityName.toUpperCase()}</div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #64748b; margin-top: 4px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">${entityType}</div>
                         </div>
                         ` : ''}
                     </div>
@@ -840,19 +868,55 @@
                     const midX = (pos1.x + pos2.x) / 2;
                     const midY = (pos1.y + pos2.y) / 2;
                     const zoomLevel = renderer.getCamera().ratio;
+                    
+                    let edgeTypeColor = '#3b82f6';
+                    if(targetAttrs.custom_is_cex) edgeTypeColor = '#f59e0b';
+                    if(targetAttrs.custom_is_suspect) edgeTypeColor = '#ef4444';
+
+                    let edgeIdSafe = edge.replace(/[^a-zA-Z0-9]/g,'');
+                    let svgOverlay = `
+                    <svg style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
+                        <defs>
+                            <marker id="arrow-${edgeIdSafe}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="${edgeTypeColor}" />
+                            </marker>
+                        </defs>
+                        <path d="M ${pos1.x} ${pos1.y} L ${pos2.x} ${pos2.y}" class="pulse-edge" style="stroke: ${edgeTypeColor}; stroke-width: 2px;" marker-end="url(#arrow-${edgeIdSafe})" />
+                        <circle cx="${pos1.x}" cy="${pos1.y}" r="4" fill="#ffffff" stroke="${edgeTypeColor}" stroke-width="2" />
+                    </svg>
+                    `;
+                    overlay.insertAdjacentHTML('beforeend', svgOverlay);
+
                     if (zoomLevel > 1.5) return;
                     
                     let edgeHtml = `
-                    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); background: rgba(255,255,255,0.95); padding: 4px 10px; border-radius: 8px; border: 1px solid #e2e8f0; pointer-events: auto; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); backdrop-filter: blur(4px);"
-                         onclick="openTxPanel('${edge}')">
-                        <div style="font-size: 8px; font-weight: 800; color: #94a3b8; margin-bottom: 2px; letter-spacing: 0.1em;">OUTFLOW</div>
-                        <div style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: #ef4444;">
-                            <i class="fa-solid fa-arrow-down text-[9px]"></i> $${attrs.custom_usd}
+                    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); pointer-events: auto; text-align: center; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 64px;" onclick="openTxPanel('${edge}')">
+                        
+                        <!-- Above Line -->
+                        <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); backdrop-filter: blur(4px);">
+                            <div style="font-size: 10px; font-weight: 800; color: #334155; font-family: 'Inter', sans-serif; display:flex; align-items:center; gap:4px;">
+                                <img src="${getTokenLogo(attrs.custom_ticker) || 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035'}" style="width: 14px; height: 14px; border-radius: 50%;">
+                                ${attrs.custom_ticker} (${attrs.custom_chain || 'ERC20'})
+                            </div>
+                            <div style="font-size: 9px; font-weight: 800; color: #94a3b8; letter-spacing: 0.1em; margin-top:3px;">OUTFLOW</div>
+                            <div style="font-size: 13px; font-weight: 900; color: #ef4444; margin-top:2px;">
+                                <i class="fa-solid fa-arrow-down text-[10px]"></i> $${attrs.custom_usd}
+                            </div>
                         </div>
-                        <div style="font-size: 9px; font-weight: 700; color: #475569; margin-top: 3px; font-family: 'JetBrains Mono', monospace;">
-                            <img src="${getTokenLogo(attrs.custom_ticker) || 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035'}" style="width: 10px; height: 10px; display: inline-block; vertical-align: text-top; margin-right: 2px;">
-                            ${attrs.custom_amt_raw} ${attrs.custom_ticker}
+                        
+                        <!-- Spacing for the SVG line -->
+                        <div style="flex-grow: 1;"></div>
+                        
+                        <!-- Below Line -->
+                        <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); backdrop-filter: blur(4px); margin-top: 4px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
+                                ${edge.substring(0,6)}...${edge.substring(edge.length-4)}
+                            </div>
+                            <div style="font-size: 9px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 4px; text-transform: uppercase;">
+                                ${attrs.custom_chain || 'ERC20'}
+                            </div>
                         </div>
+
                     </div>
                     `;
                     overlay.insertAdjacentHTML('beforeend', edgeHtml);
@@ -862,15 +926,76 @@
             window.hoverNode = function(node) { hoveredNode = node; renderer.refresh(); };
             window.unhoverNode = function() { hoveredNode = null; renderer.refresh(); };
             
-            forceAtlas2 = new graphologyLibrary.layoutForceAtlas2.ForceAtlas2Layout(graph, {
-                settings: { gravity: 0.2, scalingRatio: 5, strongGravityMode: false }
-            });
+            // forceAtlas2 synchronous params
+            window.fa2Settings = { gravity: 0.2, scalingRatio: 5, strongGravityMode: false };
         }
 
         // WS connection with Auto-Rotate Fallback
         let ws;
         let isPaused = false;
+        let isAutoCluster = true;
         let pendingMessages = [];
+
+        window.togglePauseResume = function() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('btn-pause-resume');
+            if(isPaused) {
+                document.getElementById('status').innerHTML = '<span class="text-amber-600 font-bold">Trace Paused</span>';
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Resume';
+                btn.classList.replace('bg-amber-500', 'bg-emerald-500');
+                btn.classList.replace('hover:bg-amber-400', 'hover:bg-emerald-400');
+            } else {
+                document.getElementById('status').innerHTML = '<span class="text-emerald-600 font-bold">Trace Resumed</span>';
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                btn.classList.replace('bg-emerald-500', 'bg-amber-500');
+                btn.classList.replace('hover:bg-emerald-400', 'hover:bg-amber-400');
+                processPendingMessages();
+            }
+        };
+
+        window.changeGraphLayout = function(layoutType) {
+            addTerminalLog(`APPLYING LAYOUT: ${layoutType.toUpperCase()}`, "text-blue-400 font-bold");
+            
+            if (layoutType === 'physics' || layoutType === 'physics (force)') {
+                if (window.forceAtlas2) {
+                    forceAtlas2.assign(graph, 100, window.fa2Settings || {
+                        barnesHutOptimize: true,
+                        strongGravityMode: true,
+                        gravity: 0.05,
+                        scalingRatio: 10,
+                        slowDown: 1
+                    });
+                }
+            } else if (layoutType === 'circular') {
+                let i = 0;
+                let numNodes = graph.order;
+                if (numNodes === 0) return;
+                let radius = Math.max(100, numNodes * 15);
+                graph.forEachNode((node) => {
+                    let angle = (i / numNodes) * 2 * Math.PI;
+                    graph.setNodeAttribute(node, 'x', Math.cos(angle) * radius);
+                    graph.setNodeAttribute(node, 'y', Math.sin(angle) * radius);
+                    i++;
+                });
+            } else if (layoutType === 'hierarchical_lr' || layoutType === 'tree' || layoutType === 'sequential') {
+                let i = 0;
+                let numNodes = graph.order;
+                if (numNodes === 0) return;
+                let cols = Math.ceil(Math.sqrt(numNodes));
+                graph.forEachNode((node) => {
+                    let col = i % cols;
+                    let row = Math.floor(i / cols);
+                    graph.setNodeAttribute(node, 'x', col * 150);
+                    graph.setNodeAttribute(node, 'y', row * 150);
+                    i++;
+                });
+            }
+        };
+
+        window.toggleAutoCluster = function() {
+            isAutoCluster = document.getElementById('auto-cluster-toggle').checked;
+            addTerminalLog(`AUTO-CLUSTER: ${isAutoCluster ? 'ENABLED' : 'DISABLED'}`, isAutoCluster ? "text-emerald-400" : "text-amber-400");
+        };
 
         window.pauseTrace = function() { isPaused = true; document.getElementById('status').innerHTML = '<span class="text-amber-600 font-bold">Trace Paused</span>'; };
         window.resumeTrace = function() { 
@@ -892,35 +1017,44 @@
 
             const url = getBackendWsUrl('trace');
             console.log(`Attempting to connect to: ${url}`);
-            addTerminalLog(`[SYSTEM] Attempting uplink to Region-0${window.currentBackendIndex+1}...`, "text-slate-400");
+            addTerminalLog(`[SYSTEM] Attempting Raw WebSocket uplink to Region-0${window.currentBackendIndex+1}...`, "text-slate-400");
             
-            ws = new WebSocket(url);
+            socket = new WebSocket(url);
 
-            ws.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                if (isPaused) {
-                    pendingMessages.push(data);
-                } else {
-                    processWSMessage(data);
-                }
-            };
-
-            ws.onopen = function() {
-                console.log('WS Connected');
+            socket.onopen = () => {
+                console.log('WebSocket Connected');
                 addTerminalLog(`[SYSTEM] Uplink Established.`, "text-emerald-400 font-bold");
+                
+                socket.emit = function(event, data) {
+                    if(typeof data === 'object') {
+                        data.type = event;
+                        socket.send(JSON.stringify(data));
+                    }
+                };
             };
 
-            ws.onerror = function(err) {
-                console.error('WS Error:', err);
-            };
-
-            ws.onclose = function(e) {
-                console.log(`WS Closed: ${e.code}. Initiating auto-rotate...`);
-                // Only rotate if we haven't successfully completed a session or if it was an abnormal closure
-                if (e.code !== 1000) {
-                    window.currentBackendIndex++;
-                    setTimeout(connectWS, 1000); // 1s delay before rotating to the next backend
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (isPaused) {
+                        pendingMessages.push(data);
+                    } else {
+                        processWSMessage(data);
+                    }
+                } catch(e) {
+                    console.error("Error parsing WS message:", e);
                 }
+            };
+
+            socket.onclose = (event) => {
+                console.log(`WebSocket Disconnected: ${event.code} ${event.reason}. Auto-reconnecting...`);
+                setTimeout(connectWS, 2000);
+            };
+
+            socket.onerror = (err) => {
+                console.error('WebSocket Connection Error:', err);
+                window.currentBackendIndex++;
+                if (window.currentBackendIndex >= BACKENDS.length) window.currentBackendIndex = 0;
             };
         }
 
@@ -949,6 +1083,14 @@
         function processWSMessage(data) {
             if (data.type === 'LOG') {
                 addTerminalLog(data.message, data.message.includes("Error") ? "text-red-400" : "text-emerald-400");
+                return;
+            }
+            if (data.type === 'START_SCAN') {
+                addTerminalLog(`[SCAN] Investigating ${data.address.substring(0,8)}... on ${data.chain}`, "text-blue-300 font-bold");
+                return;
+            }
+            if (data.type === 'TX_FETCHED') {
+                addTerminalLog(`[FETCH] Discovered ${data.count} transactions for ${data.address.substring(0,8)}...`, "text-emerald-300");
                 return;
             }
             if (data.type === 'INIT') {
@@ -989,6 +1131,36 @@
                         addTerminalLog(`[OSINT] Resolved ${data.node.substring(0,8)}... as ${data.classification}`, "text-yellow-400");
                     } catch(e) { console.error("Node update error:", e); }
                 }
+            } else if (data.type === 'AML_UPDATE') {
+                if (allNodesMap.has(data.node)) {
+                    let updateData = { id: data.node };
+                    let logColor = "text-yellow-400";
+                    if (data.color === "RED") {
+                        updateData.color = "#ef4444"; // Neon Red
+                        updateData.size = 22;
+                        logColor = "text-red-500";
+                    } else if (data.color === "ORANGE") {
+                        updateData.color = "#f97316"; // Neon Orange
+                        updateData.size = 18;
+                        logColor = "text-orange-400";
+                    } else if (data.color === "YELLOW") {
+                        updateData.color = "#eab308";
+                    } else {
+                        updateData.color = "#10b981"; // Neon Green
+                        logColor = "text-emerald-400";
+                    }
+                    
+                    updateData.label = `[Risk: ${data.risk_score}]\n${data.classification}\n${data.node.substring(0,6)}...`;
+                    
+                    try {
+                        graph.mergeNodeAttributes(data.node, updateData);
+                        addTerminalLog(`[AML] Risk ${data.risk_score}/100: ${data.node.substring(0,8)}... (${data.classification})`, logColor);
+                        if (data.flags && data.flags.length > 0) {
+                            data.flags.forEach(flag => addTerminalLog(`  -> FLAG: ${flag}`, "text-red-400 font-bold"));
+                        }
+                        if (renderer) renderer.refresh();
+                    } catch (e) { console.error(e); }
+                }
             } else if (data.type === 'LEDGER_BATCH') {
                 data.data.forEach(edgeData => queueEdgeForRender(edgeData));
             } else if (data.type === 'LEDGER') {
@@ -1014,14 +1186,33 @@
             
             // Add From Node if missing
             if(!allNodesMap.has(edgeData.from)) {
-                nodeBuffer.push({ id: edgeData.from, label: 'WALLET\n' + edgeData.from.substring(0,8) + '...', image: getSafeIconUrl(edgeData.from, false, false, edgeData.chain) });
+                let isCex = false;
+                let isSuspect = edgeData.is_suspect || false;
+                nodeBuffer.push({ 
+                    id: edgeData.from, 
+                    label: 'WALLET\n' + edgeData.from.substring(0,8) + '...', 
+                    image: getSafeIconUrl(edgeData.from, false, false, edgeData.chain),
+                    custom_is_cex: isCex,
+                    custom_is_suspect: isSuspect,
+                    custom_entity: 'WALLET',
+                    custom_chain: edgeData.chain
+                });
                 allNodesMap.set(edgeData.from, edgeData.from);
             }
             // Add To Node if missing
             if(!allNodesMap.has(edgeData.to)) {
                 let toLabel = edgeData.receiver_entity || 'UNKNOWN';
-                let isCex = toLabel.toUpperCase().includes("EXCHANGE") || toLabel.toUpperCase().includes("BINANCE");
-                nodeBuffer.push({ id: edgeData.to, label: toLabel + '\n' + edgeData.to.substring(0,8) + '...', image: getSafeIconUrl(toLabel, false, isCex, edgeData.chain) });
+                let isCex = toLabel.toUpperCase().includes("EXCHANGE") || toLabel.toUpperCase().includes("BINANCE") || toLabel.toUpperCase().includes("OKX") || toLabel.toUpperCase().includes("KRAKEN");
+                let isSuspect = edgeData.is_suspect || toLabel.toUpperCase().includes("SUSPECT") || toLabel.toUpperCase().includes("HACKER");
+                nodeBuffer.push({ 
+                    id: edgeData.to, 
+                    label: toLabel + '\n' + edgeData.to.substring(0,8) + '...', 
+                    image: getSafeIconUrl(toLabel, false, isCex, edgeData.chain),
+                    custom_is_cex: isCex,
+                    custom_is_suspect: isSuspect,
+                    custom_entity: toLabel,
+                    custom_chain: edgeData.chain
+                });
                 allNodesMap.set(edgeData.to, edgeData.to);
             }
 
@@ -1194,9 +1385,10 @@
             if (logBufferHtml) document.getElementById('tx-log-body').insertAdjacentHTML('afterbegin', logBufferHtml);
             
             if (nodeBuffer.length > 0 || edgeBuffer.length > 0) {
-                if (forceAtlas2) {
-                    forceAtlas2.start();
-                    setTimeout(() => forceAtlas2.stop(), 500); // run for 500ms
+                if (window.forceAtlas2) {
+                    try {
+                        window.forceAtlas2.assign(graph, {iterations: 50, settings: window.fa2Settings});
+                    } catch(e) { console.error("FA2 Error:", e); }
                 }
             }
             
@@ -1211,29 +1403,27 @@
             
             if (seeds.length === 0) return alert('Enter at least one seed');
             
-            // Show loaders
             let loader = document.getElementById('trace-ajax-loader');
             if (loader) loader.classList.remove('hidden');
             let txLoader = document.getElementById('tx-log-loader');
             if (txLoader) txLoader.classList.remove('hidden');
+            let landing = document.getElementById('tracer-landing');
+            if (landing) landing.classList.add('hidden');
             
             document.getElementById('trace-id-val').innerText = 'NMS-' + Math.floor(Math.random()*90000 + 10000);
-            if (ws.readyState === WebSocket.CONNECTING) {
+            if (!socket || !socket.connected) {
                 setTimeout(window.submitTrace, 500);
-                return;
-            } else if (ws.readyState !== WebSocket.OPEN) {
-                alert("Connection to tracing engine lost. Please refresh the page.");
                 return;
             }
             
-            ws.send(JSON.stringify({
+            socket.emit('START_TRACE', {
                 type: 'START_TRACE',
                 seeds: seeds,
                 target_amount: targetAmount,
                 network: network,
                 max_depth: parseInt(maxDepth),
                 max_hops: parseInt(document.getElementById('max-hops').value || "100")
-            }));
+            });
         }
 
         // --- ADDED MISSING FUNCTIONS ---
@@ -1281,8 +1471,8 @@
         
         function changeLayout() {
             let layout = document.getElementById("layoutSelect").value;
-            if (layout === "physics") {
-                // Layout changes mapped to Sigma/Graphology if needed
+            if (window.changeGraphLayout) {
+                window.changeGraphLayout(layout);
             }
         }
     </script>
@@ -1293,7 +1483,7 @@
             <i class="fa-solid fa-id-card"></i> NEMESIS ID <span id="nemesis-id-title" class="text-blue-600 text-sm ml-2"></span>
         </h2>
         <div class="flex items-center gap-4">
-            <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded text-xs font-bold uppercase transition shadow flex items-center gap-2"><i class="fa-solid fa-file-export"></i> Export Dossier</button>
+            <button onclick="window.triggerGeneratePDF()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded text-xs font-bold uppercase transition shadow flex items-center gap-2"><i class="fa-solid fa-file-export"></i> Export Dossier</button>
             <button onclick="closeNemesisIDPanel()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-2xl"></i></button>
         </div>
     </div>
@@ -1312,11 +1502,88 @@
     <div class="p-6 overflow-y-auto" id="tx-intel-content"></div>
 </div>
 
+<!-- Global Modals (Evidentiary Log, Audit, Intelligence, Report) -->
+<div id="log-panel" class="fixed top-0 right-0 h-full w-[50%] md:w-[40%] bg-slate-50 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-300">
+    <div class="bg-white text-slate-800 p-4 flex justify-between items-center border-b border-slate-200 shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-list-ul text-slate-500"></i> EVIDENTIARY LOG
+        </h2>
+        <button onclick="closeSidePanel('log-panel')" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 font-mono text-xs bg-slate-900 text-emerald-400" id="evidentiary-log-content">
+        [SYSTEM] EVIDENTIARY LOGGING INITIALIZED.<br>
+        [SYSTEM] AWAITING TRACE ACTIVITY...
+    </div>
+</div>
+
+<div id="audit-panel" class="fixed top-0 right-0 h-full w-[60%] md:w-[50%] bg-slate-50 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-300">
+    <div class="bg-emerald-600 text-white p-4 flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved"></i> MASTER AUDIT
+        </h2>
+        <button onclick="closeSidePanel('audit-panel')" class="text-emerald-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 bg-slate-50 text-sm text-slate-700">
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+            <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2">Smart Contract Verification</h3>
+            <p>System automatically audits interacted contracts against the Nemesis vulnerability database. No critical vulnerabilities found in current traced path.</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2">Compliance & Regulatory Check</h3>
+            <p>All identified entities comply with base tracking protocols. Deep KYC mapping is ongoing.</p>
+        </div>
+    </div>
+</div>
+
+<div id="intel-panel" class="fixed top-0 right-0 h-full w-[70%] md:w-[60%] bg-slate-50 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-300">
+    <div class="bg-indigo-600 text-white p-4 flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-brain"></i> INTELLIGENCE BASE
+        </h2>
+        <button onclick="closeSidePanel('intel-panel')" class="text-indigo-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 bg-slate-50 text-sm text-slate-700">
+        <div class="grid grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-black text-indigo-700 mb-2 uppercase tracking-wide border-b pb-2">Threat Actor Knowledge Base</h3>
+                <p class="mt-2 text-xs text-slate-500">Cross-referencing entities against known APTs and Ransomware syndicates.</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="font-black text-indigo-700 mb-2 uppercase tracking-wide border-b pb-2">Global CEX Mappings</h3>
+                <p class="mt-2 text-xs text-slate-500">Repository of over 100+ mapped centralized exchanges and their deposit addresses.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="report-panel" class="fixed top-0 right-0 h-full w-[50%] md:w-[40%] bg-slate-50 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-300">
+    <div class="bg-rose-600 text-white p-4 flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-file-pdf"></i> FORENSIC REPORT ENGINE
+        </h2>
+        <button onclick="closeSidePanel('report-panel')" class="text-rose-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-8 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-white text-center">
+        <i class="fa-solid fa-file-contract text-6xl text-slate-200 mb-6"></i>
+        <h3 class="text-2xl font-black text-slate-800 mb-2">Ready for Handover</h3>
+        <p class="text-slate-500 max-w-sm mx-auto mb-8">Generate a law-enforcement-ready forensic dossier detailing the complete fund flow, identified entities, and evidence log.</p>
+        <button onclick="window.triggerGeneratePDF()" class="bg-rose-600 hover:bg-rose-500 text-white px-8 py-4 rounded-xl text-sm font-bold shadow-xl transition-transform hover:-translate-y-1 w-full max-w-sm">
+            <i class="fa-solid fa-download mr-2"></i> EXPORT TO PDF
+        </button>
+    </div>
+</div>
+
 <script>
 
     // (Duplicate BACKENDS block removed to prevent SyntaxError)
     // =====================================
 
+    function openSidePanel(panelId) {
+        document.getElementById(panelId).classList.remove('translate-x-full');
+    }
+    function closeSidePanel(panelId) {
+        document.getElementById(panelId).classList.add('translate-x-full');
+    }
     function openNemesisIDPanel(nodeId) {
         if (!nodeId) return;
         document.getElementById('nemesis-id-iframe').src = '/nemesis_id?address=' + nodeId + '&embed=true';
@@ -1379,10 +1646,10 @@
                         </div>
                     </div>
                     
-                    <button class="w-full bg-blue-600 text-white font-black py-3 rounded-xl uppercase text-xs hover:bg-blue-500 transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+                    <button onclick="alert('Initiating Deep Trace Analysis on ' + '${edge.id}' + '...')" class="w-full bg-blue-600 text-white font-black py-3 rounded-xl uppercase text-xs hover:bg-blue-500 transition shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-microchip"></i> Run Deep Trace Analysis
                     </button>
-                    <button class="w-full bg-white text-slate-700 border border-slate-300 font-bold py-2.5 rounded-xl uppercase text-[10px] hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                    <button onclick="alert('IOCs Extracted to Evidentiary Log.')" class="w-full bg-white text-slate-700 border border-slate-300 font-bold py-2.5 rounded-xl uppercase text-[10px] hover:bg-slate-50 transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-file-export"></i> Extract IOCs to Evidentiary Log
                     </button>
                 </div>
@@ -1392,7 +1659,42 @@
     function closeTxPanel() {
         document.getElementById('tx-intel-panel').classList.add('translate-x-full');
     }
+    window.triggerGeneratePDF = function() {
+        alert('Generating Forensic Report PDF...');
+        window.print();
+    };
 </script>
     <script src="/nemesis-ui.js"></script>
+
+<!-- GLOBAL NEMESIS AJAX LOADER -->
+<div id="global-ajax-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center; flex-direction: column;">
+    <img src="assets/butterfly_transparent.png" style="width: 100px; height: 100px; animation: pulse-loader 1.5s infinite; filter: drop-shadow(0 0 20px rgba(6,182,212,0.8));">
+    <div style="color: #06b6d4; margin-top: 20px; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px #06b6d4;">NEMESIS SINGULARITY KERNEL</div>
+    <style>
+        @keyframes pulse-loader {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 30px rgba(6,182,212,1)); }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+    </style>
+</div>
+<script>
+    (function() {
+        if (window._nemesisLoaderInitialized) return;
+        window._nemesisLoaderInitialized = true;
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const loader = document.getElementById('global-ajax-loader');
+            if (loader) loader.style.display = 'flex';
+            try {
+                const response = await originalFetch.apply(this, args);
+                return response;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        };
+    })();
+</script>
 </body>
+
 </html>

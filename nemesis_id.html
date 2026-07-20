@@ -72,8 +72,8 @@
                         cyber: ['Syncopate', 'sans-serif']
                     },
                     colors: { 
-                        nemesis: { light: '#f8fafc', panel: '#ffffff', border: '#e2e8f0', accent: '#2563eb', glow: '#bfdbfe' },
-                        danger: { 50: '#fef2f2', 500: '#ef4444', 600: '#dc2626', 900: '#7f1d1d' }
+                        nemesis: { light: '#0f172a', panel: '#1e293b', border: '#334155', accent: '#3b82f6', glow: '#1d4ed8' },
+                        danger: { 50: '#450a0a', 500: '#ef4444', 600: '#dc2626', 900: '#7f1d1d' }
                     },
                     animation: {
                         'pulse-fast': 'pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -101,9 +101,9 @@
 
     <style>
         /* Base Transparent to show Canvas */
-        body { background-color: #ffffff; color: #1e293b; overflow-x: hidden; position: relative; }
+        body { background-color: #0f172a; color: #f8fafc; overflow-x: hidden; position: relative; }
         #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; pointer-events: none; }
-        #bg-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.7); z-index: -1; pointer-events: none; }
+        #bg-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); z-index: -1; pointer-events: none; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -112,8 +112,8 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
 
         /* Web3GL Loader */
-        #global-loader { position: fixed; inset: 0; background: radial-gradient(circle at center, #f8fafc 0%, #ffffff 100%); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; overflow: hidden; }
-        #global-loader::before { content: ''; position: absolute; inset: -200%; background-image: linear-gradient(rgba(37, 99, 235, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation: grid-move 5s linear infinite; z-index: -1; }
+        #global-loader { position: fixed; inset: 0; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s ease; overflow: hidden; }
+        #global-loader::before { content: ''; position: absolute; inset: -200%; background-image: linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px); background-size: 40px 40px; transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation: grid-move 5s linear infinite; z-index: -1; }
         @keyframes grid-move { 0% { transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); } 100% { transform: perspective(500px) rotateX(60deg) translateY(0px) translateZ(-200px); } }
         .loader-spinner { border: 4px solid rgba(37, 99, 235, 0.1); border-top: 4px solid #2563eb; border-radius: 50%; width: 80px; height: 80px; animation: spin 1s linear infinite; margin-bottom: 20px; box-shadow: 0 0 20px rgba(37, 99, 235, 0.2); }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -128,9 +128,9 @@
         }
 
         /* UI Elements */
-        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(25px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        .data-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.03); transition: all 0.2s ease; position: relative; overflow: hidden; }
-        .data-card:hover { border-color: #93c5fd; box-shadow: 0 8px 30px rgba(37, 99, 235, 0.08); transform: translateY(-2px); }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(25px); border-bottom: 1px solid rgba(51, 65, 85, 0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .data-card { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.8); border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 15px rgba(0,0,0,0.3); transition: all 0.2s ease; position: relative; overflow: hidden; }
+        .data-card:hover { border-color: #3b82f6; box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15); transform: translateY(-2px); }
         
         function toggleTerminal() {
             const term = document.getElementById('floating-terminal');
@@ -203,6 +203,35 @@
         .flip-card-back { background-color: rgba(248, 250, 252, 0.95); transform: rotateY(180deg); border-color: #93c5fd; }
     </style>
     <link rel="stylesheet" href="/nemesis-ui.css">
+    <script>
+        // DYNAMIC DARK MODE CONVERTER
+        document.addEventListener('DOMContentLoaded', () => {
+            const replacements = {
+                "bg-white": "bg-slate-900",
+                "bg-slate-50": "bg-slate-800",
+                "bg-slate-100": "bg-slate-800",
+                "text-slate-900": "text-slate-100",
+                "text-slate-800": "text-slate-200",
+                "text-slate-700": "text-slate-300",
+                "text-slate-600": "text-slate-400",
+                "text-slate-500": "text-slate-400",
+                "border-slate-200": "border-slate-700",
+                "border-slate-300": "border-slate-600",
+                "shadow-sm": "shadow-md shadow-black/50",
+                "shadow-md": "shadow-lg shadow-black/50"
+            };
+            
+            const allElements = document.querySelectorAll('*');
+            allElements.forEach(el => {
+                let currentClassList = Array.from(el.classList);
+                currentClassList.forEach(cls => {
+                    if(replacements[cls]) {
+                        el.classList.replace(cls, replacements[cls]);
+                    }
+                });
+            });
+        });
+    </script>
 </head>
 <body class="h-screen flex flex-col show-usd">
     <canvas id="webgl-canvas"></canvas>
@@ -1770,7 +1799,14 @@
             // 3. Graph
             if(graph) {
                 const realTxs = graph.real_transactions || [];
-                const graphNodes = [{ id: address, label: 'Target', color: '#3b82f6', value: 30 }];
+                const graphNodes = [{ 
+                    id: address, 
+                    label: 'TARGET', 
+                    title: `Address: ${address}`,
+                    color: { background: '#1e293b', border: '#3b82f6', highlight: { border: '#60a5fa' } }, 
+                    value: 30,
+                    font: { color: '#ffffff' }
+                }];
                 const graphEdges = [];
                 const addedNodes = new Set([address.toLowerCase()]);
                 
@@ -1779,30 +1815,39 @@
                     const tx = txObj.tx;
                     const fromAddr = tx.from || 'Unknown';
                     const toAddr = tx.to || 'Unknown';
-                    const valUsd = (parseFloat(tx.value) || 0) * 3100 / 1e18; // approx ETH price for demo
+                    const valUsd = parseFloat(tx.value_usd) || ((parseFloat(tx.value) || 0) * 3100); // Fallback if missing
+                    const ticker = tx.ticker || 'ETH';
                     
                     if (toAddr.toLowerCase() === address.toLowerCase()) totalIn += valUsd;
                     if (fromAddr.toLowerCase() === address.toLowerCase()) totalOut += valUsd;
                     
                     if (!addedNodes.has(fromAddr.toLowerCase())) {
                         if (tx.from_cex) {
-                            graphNodes.push({ id: fromAddr, label: 'CEX: ' + tx.from_cex, color: '#ef4444', value: 20, font: {color: 'white'} });
+                            graphNodes.push({ id: fromAddr, label: 'CEX\n' + tx.from_cex, color: { background: '#1e293b', border: '#ef4444' }, value: 20, font: {color: '#ffffff'} });
                         } else {
-                            graphNodes.push({ id: fromAddr, label: 'Source', color: '#94a3b8', value: 10 });
+                            graphNodes.push({ id: fromAddr, label: fromAddr.substring(0,6), title: fromAddr, color: { background: '#f8fafc', border: '#cbd5e1' }, value: 15, font: {color: '#475569'} });
                         }
                         addedNodes.add(fromAddr.toLowerCase());
                     }
                     if (!addedNodes.has(toAddr.toLowerCase())) {
                         if (tx.to_cex) {
-                            graphNodes.push({ id: toAddr, label: 'CEX: ' + tx.to_cex, color: '#ef4444', value: 25, font: {color: 'white'}, shape: 'star' });
+                            graphNodes.push({ id: toAddr, label: 'CEX\n' + tx.to_cex, color: { background: '#1e293b', border: '#ef4444' }, value: 25, font: {color: '#ffffff'} });
                         } else {
-                            graphNodes.push({ id: toAddr, label: 'Destination', color: '#94a3b8', value: 10 });
+                            graphNodes.push({ id: toAddr, label: toAddr.substring(0,6), title: toAddr, color: { background: '#f8fafc', border: '#cbd5e1' }, value: 15, font: {color: '#475569'} });
                         }
                         addedNodes.add(toAddr.toLowerCase());
                     }
-                    graphEdges.push({ from: fromAddr, to: toAddr, value: valUsd || 1 });
                     
-                    return { hash: tx.hash, from: fromAddr, to: toAddr, value_usd: valUsd, timestamp: tx.timeStamp ? new Date(tx.timeStamp * 1000).toLocaleString() : 'Recent' };
+                    const edgeLabel = valUsd > 1000 ? '$'+(valUsd/1000).toFixed(1)+'k' : '$'+valUsd.toFixed(0);
+                    graphEdges.push({ 
+                        from: fromAddr, 
+                        to: toAddr, 
+                        value: valUsd || 1,
+                        label: edgeLabel,
+                        title: `$${valUsd.toLocaleString(undefined, {maximumFractionDigits: 2})} ${ticker}`,
+                        font: { align: 'top', size: 10, color: '#64748b', strokeWidth: 3, strokeColor: '#ffffff' }
+                    });
+                    return { hash: tx.hash, from: fromAddr, to: toAddr, value_usd: valUsd, ticker: ticker, timestamp: tx.timeStamp ? new Date(tx.timeStamp * 1000).toLocaleString() : 'Recent' };
                 });
                 
                 compositeData.graph.nodes = graphNodes;
@@ -1842,7 +1887,7 @@
                             <td><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200">${cpEntity}</span></td>
                             <td class="text-center ${flowClass} font-bold"><i class="fa-solid ${flowIcon}"></i></td>
                             <td class="text-right font-black ${flowClass}">$${tx.value_usd.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
-                            <td class="text-center"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold">ETH</span></td>
+                            <td class="text-center"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold">${tx.ticker || 'ETH'}</span></td>
                             <td class="text-center"><button class="text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-ellipsis-vertical"></i></button></td>
                         </tr>
                     `;
@@ -1935,9 +1980,23 @@ async function executeNemesisSearch() {
             const nodes = new vis.DataSet(data.graph.nodes);
             const edges = new vis.DataSet(data.graph.edges);
             new vis.Network(container, { nodes, edges }, {
-                nodes: { shape: 'dot', font: { size: 12, face: 'Inter' }, shadow: true },
-                edges: { width: 1, color: { inherit: 'from' }, smooth: { type: 'continuous' } },
-                physics: { barnesHut: { gravitationalConstant: -10000 } }
+                nodes: { 
+                    shape: 'hexagon', 
+                    font: { size: 10, face: 'Inter', bold: true },
+                    borderWidth: 2,
+                    borderWidthSelected: 4,
+                    shadow: { enabled: true, color: 'rgba(0,0,0,0.1)', size: 10, x: 0, y: 5 }
+                },
+                edges: { 
+                    arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+                    color: { color: '#cbd5e1', highlight: '#94a3b8' },
+                    smooth: { type: 'dynamic' }
+                },
+                physics: { 
+                    barnesHut: { gravitationalConstant: -30000, centralGravity: 0.5 },
+                    stabilization: { iterations: 100 }
+                },
+                interaction: { hover: true, tooltipDelay: 200 }
             });
         }
 
@@ -4484,7 +4543,98 @@ async function executeNemesisSearch() {
             </span>`;
         }
 
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            });
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'border-blue-600', 'text-blue-600');
+                el.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+            });
+            
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+                selectedTab.style.display = 'block'; // Or flex/grid depending on original layout, usually block is fine
+            }
+            
+            const btnClass = 'tab-btn-' + tabId.replace('tab-', '');
+            const activeBtn = document.querySelector('.' + btnClass);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:border-slate-300');
+                activeBtn.classList.add('active', 'border-blue-600', 'text-blue-600');
+            }
+        }
+
+        function switchSubTab(subTabId) {
+            document.getElementById('subtab-interacted').classList.add('hidden');
+            document.getElementById('subtab-clustered').classList.add('hidden');
+            
+            document.getElementById('btn-tab-interacted').classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+            document.getElementById('btn-tab-interacted').classList.add('text-slate-600', 'hover:text-slate-800', 'hover:bg-slate-100');
+            document.getElementById('btn-tab-clustered').classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+            document.getElementById('btn-tab-clustered').classList.add('text-slate-600', 'hover:text-slate-800', 'hover:bg-slate-100');
+
+            document.getElementById('subtab-' + subTabId).classList.remove('hidden');
+            document.getElementById('btn-tab-' + subTabId).classList.remove('text-slate-600', 'hover:text-slate-800', 'hover:bg-slate-100');
+            document.getElementById('btn-tab-' + subTabId).classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        }
+
+        function captureGraphSnapshot() {
+            const canvas = document.querySelector('.vis-network canvas');
+            if (canvas) {
+                const img = document.getElementById('report-graph-snapshot');
+                if (img) {
+                    img.src = canvas.toDataURL('image/png');
+                    img.classList.remove('hidden');
+                }
+            }
+        }
+
+        window.downloadReport = function() {
+            alert('Downloading Forensic Dossier PDF...');
+            window.print();
+        };
+
+        // Initialize tabs on load
+        document.addEventListener('DOMContentLoaded', () => {
+            switchTab('tab-profile');
+        });
+
     </script>
     <script src="/nemesis-ui.js"></script>
+
+<!-- GLOBAL NEMESIS AJAX LOADER -->
+<div id="global-ajax-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center; flex-direction: column;">
+    <img src="assets/butterfly_transparent.png" style="width: 100px; height: 100px; animation: pulse-loader 1.5s infinite; filter: drop-shadow(0 0 20px rgba(6,182,212,0.8));">
+    <div style="color: #06b6d4; margin-top: 20px; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px #06b6d4;">NEMESIS SINGULARITY KERNEL</div>
+    <style>
+        @keyframes pulse-loader {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 30px rgba(6,182,212,1)); }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+    </style>
+</div>
+<script>
+    (function() {
+        if (window._nemesisLoaderInitialized) return;
+        window._nemesisLoaderInitialized = true;
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const loader = document.getElementById('global-ajax-loader');
+            if (loader) loader.style.display = 'flex';
+            try {
+                const response = await originalFetch.apply(this, args);
+                return response;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        };
+    })();
+</script>
 </body>
+
 </html>

@@ -1,0 +1,12 @@
+
+ ⛅️ wrangler 4.106.0 (update available 4.112.0)
+───────────────────────────────────────────────
+Resource location: remote 
+
+🌀 Creating namespace with title "CACHE_KV"
+✨ Success!
+To access your new KV Namespace in your Worker, add the following snippet to your configuration file:
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "d1645959ac0044aba2b69f2948d9ca8d"
+

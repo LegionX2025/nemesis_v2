@@ -1,0 +1,20 @@
+
+ ⛅️ wrangler 4.112.0
+────────────────────
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+Total Upload: 4.91 KiB / gzip: 1.60 KiB
+Your Worker has access to the following bindings:
+Binding                                                            Resource                  
+env.INVESTIGATION_SESSION (InvestigationSession)                   Durable Object            
+env.NEMESIS_CACHE (f4099ea1458e4e62ba838734f172846f)               KV Namespace              
+env.TRACE_QUEUE (nemesis-edge-trace-queue)                         Queue                     
+env.NEMESIS_DB (NEMESIS_DB)                                        D1 Database               
+env.PYTHON_API_URL ("http://127.0.0.1:8000")                       Environment Variable      
+env.VERCEL_API_URL ("https://nemesisfinal.vercel.app")             Environment Variable      
+
+Uploaded nemesis-backend (7.30 sec)
+Deployed nemesis-backend triggers (3.10 sec)
+  https://nemesis-backend.legionxgaming2021.workers.dev
+  Producer for nemesis-edge-trace-queue
+Current Version ID: 82560bd9-1671-44df-8e0e-37676be74d3a

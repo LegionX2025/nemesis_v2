@@ -16,9 +16,19 @@ for /f "tokens=5" %%a in ('C:\Windows\System32\netstat.exe -aon ^| C:\Windows\Sy
 echo.
 echo Ports cleared.
 echo.
+
+echo Deploying Cloudflare Worker (API Proxy)...
+cd /d "C:\Users\LEGIONX\downloads\nemesis\tracer_scripts\workers"
+call npx wrangler deploy
+
+echo Deploying Cloudflare Pages (Frontend)...
+cd /d "C:\Users\LEGIONX\downloads\nemesis\tracer_scripts"
+call npx wrangler pages deploy public --project-name nemesis-id-frontend
+
+echo.
 echo Starting Darknet Autonomous Service...
+cd /d "C:\Users\LEGIONX\downloads\nemesis\tracer_scripts"
 start /B python scripts\darknet.py
 
 echo Starting Nemesis Core Engine...
-cd /d "C:\Users\LEGIONX\downloads\nemesis\tracer_scripts"
 python nemesis_core.py

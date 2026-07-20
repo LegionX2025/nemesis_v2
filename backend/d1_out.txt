@@ -1,0 +1,8 @@
+
+ ⛅️ wrangler 4.106.0 (update available 4.112.0)
+───────────────────────────────────────────────
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mA database with that name already exists[0m
+
+
+🪵  Logs were written to "C:\Users\LEGIONX\.wrangler\logs\wrangler-2026-07-17_16-26-50_180.log"

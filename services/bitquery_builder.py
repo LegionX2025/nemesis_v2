@@ -138,24 +138,33 @@ class BitqueryBuilder:
     # 3. EXECUTION ENGINE
     # ==========================================
 
-    async def execute(self, query: str, semaphore: asyncio.Semaphore) -> Dict[str, Any]:
+    async def execute(self, query: str, semaphore: asyncio.Semaphore, max_retries: int = 3) -> Dict[str, Any]:
         """Executes the GraphQL query against Bitquery V2 with rate limit protection."""
         if not self.token:
             return {"error": "Missing BITQUERY_APIV2_TOKEN"}
             
-        async with semaphore:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(self.endpoint, headers=self.headers, json={"query": query}, timeout=30) as response:
-                        if response.status == 200:
-                            return await response.json()
-                        else:
-                            text = await response.text()
-                            logger.error(f"Bitquery API Error [{response.status}]: {text}")
-                            return {"error": f"HTTP {response.status}", "details": text}
-            except Exception as e:
-                logger.error(f"Bitquery execution failed: {str(e)}")
-                return {"error": "Exception", "details": str(e)}
+        for attempt in range(max_retries):
+            async with semaphore:
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(self.endpoint, headers=self.headers, json={"query": query}, timeout=30) as response:
+                            if response.status == 200:
+                                return await response.json()
+                            elif response.status in [403, 429]:
+                                text = await response.text()
+                                logger.warning(f"Bitquery Rate Limited [{response.status}]: {text}. Retrying in {2**attempt}s...")
+                                # Sleep OUTSIDE the semaphore to prevent holding it while waiting for rate limit
+                            else:
+                                text = await response.text()
+                                logger.error(f"Bitquery API Error [{response.status}]: {text}")
+                                return {"error": f"HTTP {response.status}", "details": text}
+                except Exception as e:
+                    logger.error(f"Bitquery execution failed on attempt {attempt}: {str(e)}")
+            
+            # Wait outside the semaphore before retrying
+            await asyncio.sleep(2**attempt)
+            
+        return {"error": "Max retries exceeded"}
 
 # Singleton instance
 bitquery_builder = BitqueryBuilder()

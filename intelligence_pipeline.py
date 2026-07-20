@@ -129,10 +129,43 @@ class IntelligencePipeline:
         if cached_data and cached_data.get("logo"):
             logo = cached_data.get("logo")
 
+        # Initialize detected_chain early so it is always available for the response
+        detected_chain = "ETHEREUM"
+        if address.startswith("bc1") or address.startswith("1") or address.startswith("3"): detected_chain = "BITCOIN"
+        elif address.startswith("r") and len(address) < 40: detected_chain = "XRP"
+        elif address.startswith("T") and len(address) == 34: detected_chain = "TRON"
+        elif address.startswith("G") and len(address) == 56: detected_chain = "STELLAR"
+        elif address.startswith("0x"): detected_chain = "ETHEREUM" # defaults to ETH, but can be POLYGON/BSC handled inside collectors
+
+        # Collect actual edges for Nemesis ID
+        fetched_edges = []
+        try:
+            from services.blockchain import collectors
+
+
+            async with aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}) as session:
+                raw_edges = await collectors.run_collectors(session, address, detected_chain)
+                for e in raw_edges:
+                    ts_val = getattr(e, "timestamp", "")
+                    if ts_val and not isinstance(ts_val, str):
+                        try: ts_val = ts_val.isoformat()
+                        except: ts_val = str(ts_val)
+                    fetched_edges.append({
+                        "edge_id": getattr(e, "edge_id", getattr(e, "transaction_hash", "")),
+                        "source_node_id": getattr(e, "source_node_id", ""),
+                        "target_node_id": getattr(e, "target_node_id", ""),
+                        "amount_native": getattr(e, "amount_native", getattr(e, "amount", 0)),
+                        "timestamp": ts_val,
+                        "tokenSymbol": getattr(e, "tokenSymbol", ""),
+                        "tokenDecimal": getattr(e, "tokenDecimal", 18)
+                    })
+        except Exception as ex:
+            logger.error(f"Failed to fetch edges for Nemesis ID: {ex}")
+
         # Prepare the response for the UI
         return {
             "address": address,
-            "chain": "ETHEREUM",  # Can be parameterized
+            "chain": detected_chain,
             "nodes": [
                 {
                     "id": address,
@@ -151,7 +184,7 @@ class IntelligencePipeline:
                     }
                 }
             ],
-            "edges": [], # Edges are populated by the trace endpoint, not the dossier init
+            "edges": fetched_edges,
             "metadata": {
                 "confidence": 0.85 if cached_data else 0.60,
                 "sources": ["osint", "oklink", "playwright", "darknet", "mongodb"]

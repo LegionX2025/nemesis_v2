@@ -14,19 +14,34 @@ logger = logging.getLogger("NEMESIS_BITQUERY")
 async def fetch_bitquery(session, address: str, chain: str):
     logger.info(f"Fetching Bitquery data for {address} on {chain}")
     url = "https://graphql.bitquery.io"
-    api_key = os.getenv("BITQUERY_API_TOKEN", "")
+    api_key = os.getenv("BITQUERY_API_KEY", "")
     
     headers = {
         "Content-Type": "application/json",
-        "X-API-KEY": api_key
+        "X-API-KEY": api_key,
+        "Authorization": f"Bearer {api_key}"
     }
     
     # Map chain
-    network = "ethereum"
-    if chain.upper() in ["BSC", "BNB"]: network = "bsc"
-    elif chain.upper() in ["POLYGON", "MATIC"]: network = "matic"
-    elif chain.upper() in ["ARBITRUM", "ARB"]: network = "arbitrum"
-    elif chain.upper() in ["OPTIMISM", "OP"]: network = "optimism"
+    chain_map = {
+        "BSC": "bsc", "BNB": "bsc",
+        "POLYGON": "matic", "MATIC": "matic",
+        "ARBITRUM": "arbitrum", "ARB": "arbitrum",
+        "OPTIMISM": "optimism", "OP": "optimism",
+        "TRON": "tron", "TRX": "tron",
+        "SOLANA": "solana", "SOL": "solana",
+        "BITCOIN": "bitcoin", "BTC": "bitcoin",
+        "AVALANCHE": "avalanche", "AVAX": "avalanche",
+        "FANTOM": "fantom", "FTM": "fantom",
+        "CELO": "celo",
+        "CRONOS": "cronos", "CRO": "cronos",
+        "BASE": "base",
+        "LITECOIN": "litecoin", "LTC": "litecoin",
+        "DOGECOIN": "dogecoin", "DOGE": "dogecoin",
+        "DASH": "dash",
+        "BITCOINCASH": "bitcoincash", "BCH": "bitcoincash",
+    }
+    network = chain_map.get(chain.upper(), chain.lower())
     
     query = """
     query ($network: EthereumNetwork!, $address: String!) {

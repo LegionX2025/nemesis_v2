@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+requests
+beautifulsoup4
+pymongo
+psycopg2-binary
+mysql-connector-python
+sqlalchemy
+lxml
+fake-useragent
+python-dotenv
+rich
+flask
+flask-cors
+neo4j
