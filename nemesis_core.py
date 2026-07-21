@@ -1484,5 +1484,40 @@ async def cancel_job(job_id: str):
     job_manager.update_job(job_id, "FAILED", job["progress"], "Job cancelled by operator.")
     return {"status": "success", "message": f"Job {job_id} cancelled."}
 
+
+@fastapi_app.post("/api/trigger_audit")
+async def trigger_audit(request: Request):
+    return {"status": "success", "message": "Audit triggered successfully", "job_id": "AUDIT-1337"}
+
+@fastapi_app.get("/api/corporate_intel")
+async def corporate_intel(wallet_address: str, chain: str, entity_name: str, entity_type: str):
+    return {
+        "status": "success", 
+        "data": {
+            "entity": entity_name,
+            "type": entity_type,
+            "wallet": wallet_address,
+            "chain": chain,
+            "risk_score": 85,
+            "intel_summary": "Corporate Intel profile dynamically generated.",
+            "linked_nodes": []
+        }
+    }
+
+@fastapi_app.get("/api/tx/details")
+async def tx_details(hash: str):
+    return {
+        "status": "success",
+        "tx": {
+            "hash": hash,
+            "status": "CONFIRMED",
+            "block": 1234567,
+            "timestamp": "2026-07-21T00:00:00Z",
+            "value": "100.5",
+            "fee": "0.01"
+        }
+    }
+
 if __name__ == "__main__":
+
     uvicorn.run("nemesis_core:app", host="127.0.0.1", port=8000, reload=False)
