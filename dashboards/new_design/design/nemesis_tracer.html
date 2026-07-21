@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEMESIS Tracer | Enterprise Advanced Mock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ENTERPRISE STARRY FLOW THEME (Yellow, Blue, White) */
+        :root {
+            --bg-dark: #0f172a;
+            --brand-blue: #1d4ed8;
+            --brand-yellow: #facc15;
+            --brand-white: #f8fafc;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-border: rgba(250, 204, 21, 0.25);
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--brand-white);
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .starry-canvas {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 40%, var(--brand-blue) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 60%, rgba(250, 204, 21, 0.15) 0%, transparent 35%),
+                        radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            background-size: 200% 200%;
+            filter: blur(80px) saturate(150%);
+            animation: swirl 25s infinite alternate ease-in-out;
+            opacity: 0.8;
+        }
+
+        @keyframes swirl {
+            0% { background-position: 0% 0%; transform: scale(1); }
+            50% { background-position: 100% 100%; transform: scale(1.05); }
+            100% { background-position: 0% 50%; transform: scale(1); }
+        }
+
+        .ento-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .title-glow {
+            font-weight: 900;
+            background: linear-gradient(to right, #ffffff, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.3));
+        }
+
+        /* Custom Scrollbar for ledgers */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(250, 204, 21, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(250, 204, 21, 0.6); }
+
+        .node-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--brand-yellow);
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+            object-fit: cover;
+        }
+
+        .pulse-ring {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #22c55e;
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        /* Side Panel Animations */
+        .slide-panel {
+            position: fixed;
+            top: 0; left: -100%;
+            width: 450px;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--brand-yellow);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        .slide-panel.open { left: 0; }
+        
+        /* Layout Transitions */
+        .target-params-panel { width: 24rem; }
+        .target-params-panel.minimized { width: 0; padding: 0; margin: 0; opacity: 0; overflow: hidden; border: none; }
+        
+        .ledger-panel { height: 35vh; transition: height 0.3s; }
+        .ledger-panel.minimized { height: 48px; overflow: hidden; }
+
+        /* Streaming Row Animation */
+        @keyframes slideDownFade {
+            from { opacity: 0; transform: translateY(-10px); background-color: rgba(250, 204, 21, 0.2); }
+            to { opacity: 1; transform: translateY(0); background-color: transparent; }
+        }
+        .stream-row { animation: slideDownFade 0.5s ease-out forwards; }
+
+        /* Currency Toggle display logic */
+        .val-native { display: none; }
+        body.show-native .val-usd { display: none; }
+        body.show-native .val-native { display: inline-block; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+    <div class="starry-canvas"></div>
+
+    <!-- Navigation -->
+    <nav class="ento-panel m-4 px-6 py-4 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-blue-700 flex items-center justify-center border border-yellow-400/50">
+                <i class="fa-solid fa-network-wired text-white text-sm"></i>
+            </div>
+            <h1 class="title-glow text-xl tracking-tight">OMNI-TRACER</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-500/30">
+                <div class="pulse-ring relative w-2 h-2 mr-1"></div> ENGINE ONLINE
+            </div>
+            <a href="index.html" class="text-sm font-semibold hover:text-yellow-400 transition">Exit</a>
+        </div>
+    </nav>
+
+    <!-- Main App UI -->
+    <main class="flex-1 flex p-4 pt-0 min-h-0 z-10 gap-4">
+        
+        <!-- Target Parameters Widget (Collapsible Left Panel) -->
+        <aside id="target-params" class="ento-panel flex flex-col shrink-0 target-params-panel transition-all duration-500">
+            <div class="p-5 border-b border-yellow-500/20 flex justify-between items-center">
+                <h2 class="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass text-yellow-400"></i> Target Parameters
+                </h2>
+                <button onclick="document.getElementById('target-params').classList.add('minimized')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-chevron-left"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto flex-1 space-y-5">
+                <!-- Multi-line input for seeds -->
+                <div>
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Seed Wallets / TX Hashes</label>
+                    <textarea class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-3 text-xs font-mono text-blue-200 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition min-h-[100px] resize-none" placeholder="Enter one per line...">0x3b5D17e2236f4D773DA87EE10B71D80C5e5b5772</textarea>
+                </div>
+                
+                <!-- Date Range -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Start Date</label>
+                        <input type="date" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-2 text-xs font-mono text-blue-200 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition" />
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">End Date</label>
+                        <input type="date" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-2 text-xs font-mono text-blue-200 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition" />
+                    </div>
+                </div>
+
+                <!-- Total Loss Assets -->
+                <div>
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-2">Total Loss Assets to Trace</label>
+                    <div class="flex gap-2">
+                        <div class="relative w-1/2">
+                            <i class="fa-solid fa-dollar-sign absolute left-3 top-1/2 -translate-y-1/2 text-green-400 text-xs"></i>
+                            <input type="text" placeholder="USD Value" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg py-2 pl-8 pr-2 text-xs font-mono text-white focus:outline-none focus:border-yellow-400" />
+                        </div>
+                        <div class="flex w-1/2 bg-slate-900/80 border border-slate-700 rounded-lg overflow-hidden focus-within:border-yellow-400">
+                            <input type="text" placeholder="Amount" class="w-full bg-transparent p-2 text-xs font-mono text-white outline-none" />
+                            <div class="bg-slate-800 flex items-center px-2 border-l border-slate-700 gap-1 cursor-pointer">
+                                <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" class="w-3 h-3 rounded-full" id="currency-icon" />
+                                <select class="bg-transparent text-[10px] text-slate-300 font-bold outline-none cursor-pointer appearance-none" onchange="document.getElementById('currency-icon').src = this.options[this.selectedIndex].dataset.img">
+                                    <option data-img="https://cryptologos.cc/logos/ethereum-eth-logo.png">ETH</option>
+                                    <option data-img="https://cryptologos.cc/logos/bitcoin-btc-logo.png">BTC</option>
+                                    <option data-img="https://cryptologos.cc/logos/tether-usdt-logo.png">USDT</option>
+                                    <option data-img="https://cryptologos.cc/logos/usd-coin-usdc-logo.png">USDC</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 text-[10px]">
+                    <div class="flex-1 bg-slate-800/50 p-2 rounded border border-slate-700">
+                        <div class="text-slate-400 mb-1">Depth Limit</div>
+                        <div class="font-bold text-white">15 Hops</div>
+                    </div>
+                    <div class="flex-1 bg-slate-800/50 p-2 rounded border border-slate-700">
+                        <div class="text-slate-400 mb-1">Mode</div>
+                        <div class="font-bold text-yellow-400">Aggressive</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-5 border-t border-yellow-500/20">
+                <button onclick="startTrace()" class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-slate-900 font-black tracking-widest uppercase py-3 rounded-lg shadow-[0_0_15px_rgba(250,204,21,0.4)] transition transform hover:scale-[1.02]">
+                    <i class="fa-solid fa-radar mr-2"></i> Deploy Trace
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Side: Graph & Ledger Container -->
+        <div class="flex-1 flex flex-col min-w-0 gap-4 relative">
+            
+            <!-- Restored Toolbar when Target Params are minimized -->
+            <button id="restore-params-btn" onclick="document.getElementById('target-params').classList.remove('minimized')" class="absolute top-4 -left-3 z-50 bg-slate-800 border border-yellow-500 text-yellow-400 p-2 rounded-r-lg shadow-lg hover:bg-slate-700 transition">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+
+            <!-- Main Visualizer Area -->
+            <div class="ento-panel flex-1 flex flex-col relative overflow-hidden">
+                
+                <!-- Graph Toolbar -->
+                <div class="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
+                    <!-- Left Tools -->
+                    <div class="flex gap-2 pointer-events-auto">
+                        <!-- Graph Layouts -->
+                        <div class="bg-slate-900/80 border border-slate-700 rounded-lg p-1 backdrop-blur flex items-center">
+                            <i class="fa-solid fa-sitemap text-slate-400 text-xs ml-2 mr-1"></i>
+                            <select class="bg-transparent text-xs text-slate-200 outline-none cursor-pointer p-1 font-bold">
+                                <option>Hierarchical L-R</option>
+                                <option>Hierarchical U-D</option>
+                                <option>Force-Directed</option>
+                                <option>Orthogonal</option>
+                                <option>Circular Bundle</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Quick Filters -->
+                        <div class="bg-slate-900/80 border border-slate-700 rounded-lg p-1.5 backdrop-blur flex items-center gap-3 px-3">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Filter:</span>
+                            <label class="flex items-center gap-1 text-xs cursor-pointer text-slate-200 hover:text-white"><input type="checkbox" checked /> CEX</label>
+                            <label class="flex items-center gap-1 text-xs cursor-pointer text-slate-200 hover:text-white"><input type="checkbox" checked /> Mixer</label>
+                            <label class="flex items-center gap-1 text-xs cursor-pointer text-slate-200 hover:text-white"><input type="checkbox" checked /> Bridge</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Tools -->
+                    <div class="flex gap-2 pointer-events-auto">
+                        <button onclick="document.body.classList.toggle('show-native')" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg border border-slate-600 text-[10px] font-bold uppercase tracking-widest transition flex items-center gap-2">
+                            <i class="fa-solid fa-coins text-yellow-400"></i> Toggle USD/Native
+                        </button>
+                        <div class="bg-slate-900/80 border border-yellow-500/30 px-4 py-1.5 rounded-lg backdrop-blur text-right">
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Total Flow Traced</div>
+                            <div class="text-sm font-bold text-yellow-400">$4,650,000.00</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Target Graph: Design 1 (Modern Card Style) -->
+                <div class="flex-1 w-full h-full overflow-auto flex items-center justify-center relative bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjUwLCAyMDQsIDIxLCAwLjEpIi8+PC9zdmc+')]">
+                    <div id="target-graph" style="width: 100%; height: 100%;"></div>
+                </div>
+
+                <!-- Zoom Controls -->
+                <div class="absolute bottom-4 left-4 z-10 flex gap-2">
+                    <button class="bg-slate-800/80 hover:bg-slate-700 text-white p-2 rounded-lg border border-slate-600 transition"><i class="fa-solid fa-plus"></i></button>
+                    <button class="bg-slate-800/80 hover:bg-slate-700 text-white p-2 rounded-lg border border-slate-600 transition"><i class="fa-solid fa-minus"></i></button>
+                    <button class="bg-slate-800/80 hover:bg-slate-700 text-white p-2 rounded-lg border border-slate-600 transition"><i class="fa-solid fa-expand"></i></button>
+                </div>
+            </div>
+
+            <!-- Live Trace Ledger (Bottom Panel) -->
+            <div id="ledger-panel" class="ento-panel ledger-panel flex flex-col shrink-0">
+                <div class="p-3 border-b border-yellow-500/20 flex justify-between items-center cursor-pointer hover:bg-slate-800/50 transition" onclick="document.getElementById('ledger-panel').classList.toggle('minimized')">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-list-ul text-yellow-400"></i> Live Trace Ledger
+                        </h2>
+                        <span class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 font-mono animate-pulse" id="ledger-count">12,450 Events</span>
+                    </div>
+                    <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                        <button class="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded border border-slate-600 font-bold flex items-center gap-1 transition"><i class="fa-solid fa-download"></i> CSV</button>
+                        <button class="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded border border-slate-600 font-bold flex items-center gap-1 transition"><i class="fa-solid fa-code"></i> JSON</button>
+                        <button onclick="document.getElementById('ledger-panel').classList.toggle('minimized')" class="text-slate-500 hover:text-white ml-2"><i class="fa-solid fa-chevron-up"></i></button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-auto p-0 relative">
+                    <table class="w-full text-left text-[10px] font-mono whitespace-nowrap">
+                        <thead class="sticky top-0 bg-slate-900/95 backdrop-blur shadow-sm border-b border-slate-700 text-slate-400 uppercase tracking-widest z-10">
+                            <tr>
+                                <th class="p-3">Date/Time (UTC)</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">TX Hash</th>
+                                <th class="p-3">From Wallet(Entity)</th>
+                                <th class="p-3">To Wallet(Entity)</th>
+                                <th class="p-3">To Receiver Entity</th>
+                                <th class="p-3 text-right">Amount</th>
+                                <th class="p-3">Transaction Type</th>
+                                <th class="p-3">Behavioral Cluster</th>
+                                <th class="p-3">Clustered Address {Root}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-slate-300" id="ledger-body">
+                            <!-- Rows will be injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Slide Panel: Node Profiler -->
+    <div id="node-panel" class="slide-panel">
+        <div class="p-5 border-b border-yellow-500/20 flex justify-between items-center bg-slate-900">
+            <h2 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
+                <i class="fa-solid fa-fingerprint text-yellow-400"></i> Full Nemesis ID Profiler
+            </h2>
+            <button onclick="closePanels()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500 flex items-center justify-center text-red-400 text-2xl">
+                    <i class="fa-solid fa-skull-crossbones"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-1">THREAT ACTOR</div>
+                    <div class="text-xl font-bold text-white tracking-tight">Lazarus Group (DPRK)</div>
+                </div>
+            </div>
+            
+            <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2">Wallet Address</div>
+                <div class="text-sm font-mono text-blue-300 break-all">0x3b5D17e2236f4D773DA87EE10B71D80C5e5b5772</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Nemesis Risk Score</div>
+                    <div class="text-3xl font-black text-red-500">98<span class="text-sm text-slate-500">/100</span></div>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">OFAC Status</div>
+                    <div class="mt-2"><span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded text-xs font-bold uppercase">MATCH FOUND</span></div>
+                </div>
+            </div>
+
+            <button onclick="window.location.href='nemesis_id_dashboard.html'" class="w-full bg-slate-800 hover:bg-slate-700 border border-blue-500/50 text-white font-bold py-3 rounded-lg transition flex justify-center items-center gap-2">
+                <i class="fa-solid fa-external-link-alt text-blue-400"></i> Open Full Dashboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Slide Panel: Edge/Transaction Details -->
+    <div id="edge-panel" class="slide-panel">
+        <div class="p-5 border-b border-yellow-500/20 flex justify-between items-center bg-slate-900">
+            <h2 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice text-yellow-400"></i> Full Transaction Intelligence
+            </h2>
+            <button onclick="closePanels()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700 text-center">
+                <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Transferred Amount</div>
+                <div class="text-2xl font-mono font-bold text-white">432,868 USDT</div>
+                <div class="text-sm text-green-400 font-mono mt-1">~$432,868.73 USD</div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Transaction Hash</div>
+                    <a href="#" class="text-xs font-mono text-blue-400 hover:underline break-all">0x9f1a8b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1</a>
+                </div>
+                <div class="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Timestamp (UTC)</div>
+                    <div class="text-xs font-mono text-slate-300">2026-07-19 14:02:11</div>
+                </div>
+                <div class="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50 flex items-center gap-3">
+                    <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" class="w-6 h-6 rounded-full" />
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Network / Chain</div>
+                        <div class="text-xs font-bold text-white">Ethereum Mainnet</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Flow Analysis</h3>
+                <div class="flex items-center justify-between text-xs font-mono">
+                    <div class="w-2/5 truncate text-red-400">0x3b5D...772</div>
+                    <i class="fa-solid fa-arrow-right text-slate-500"></i>
+                    <div class="w-2/5 truncate text-right text-purple-400">0x030c...56F</div>
+                </div>
+                <div class="flex items-center justify-between mt-1 text-[10px] font-bold">
+                    <div class="w-2/5 truncate text-slate-500 uppercase">Lazarus Group</div>
+                    <div class="w-2/5 truncate text-right text-slate-500 uppercase">Tornado.Cash</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts for interactivity -->
+    <script>
+        // Vis.js Graph Initialization
+        let network = null;
+        function initGraph() {
+            const container = document.getElementById('target-graph');
+            const nodes = new vis.DataSet([
+                { id: 1, label: 'Lazarus Group (DPRK)\n0x3b5D...772', color: {background: 'rgba(239, 68, 68, 0.2)', border: '#ef4444'}, font: {color: 'white', face: 'monospace'}, shape: 'box', borderWidth: 2, shadow: {color: 'rgba(239, 68, 68, 0.5)', size: 10} },
+                { id: 2, label: 'Tornado.Cash\n0x030c...56F', color: {background: 'rgba(168, 85, 247, 0.2)', border: '#a855f7'}, font: {color: 'white', face: 'monospace'}, shape: 'box', borderWidth: 2, shadow: {color: 'rgba(168, 85, 247, 0.5)', size: 10} },
+                { id: 3, label: 'Binance 14\nbc1qxy2kgdy...', color: {background: 'rgba(250, 204, 21, 0.2)', border: '#facc15'}, font: {color: 'white', face: 'monospace'}, shape: 'box', borderWidth: 2, shadow: {color: 'rgba(250, 204, 21, 0.5)', size: 10} },
+                { id: 4, label: 'ThorChain Router\n0x7a2...49f', color: {background: 'rgba(59, 130, 246, 0.2)', border: '#3b82f6'}, font: {color: 'white', face: 'monospace'}, shape: 'box', borderWidth: 2, shadow: {color: 'rgba(59, 130, 246, 0.5)', size: 10} },
+                { id: 5, label: 'Unknown Proxy\n0x88c...b22', color: {background: 'rgba(100, 116, 139, 0.2)', border: '#64748b'}, font: {color: 'white', face: 'monospace'}, shape: 'box', borderWidth: 2, shadow: {color: 'rgba(100, 116, 139, 0.5)', size: 10} }
+            ]);
+            const edges = new vis.DataSet([
+                { from: 1, to: 2, label: '$432,868.73 (USDT)', font: {color: '#60a5fa', align: 'top'}, color: {color: '#3b82f6', highlight: '#60a5fa'}, width: 2, arrows: 'to' },
+                { from: 2, to: 3, label: '$350,000.00 (ETH)', font: {color: '#60a5fa', align: 'top'}, color: {color: '#3b82f6', highlight: '#60a5fa'}, width: 2, arrows: 'to' },
+                { from: 2, to: 4, label: '$82,000.00 (ETH)', font: {color: '#60a5fa', align: 'top'}, color: {color: '#3b82f6', highlight: '#60a5fa'}, width: 2, arrows: 'to' },
+                { from: 4, to: 5, label: '$81,500.00 (BTC)', font: {color: '#60a5fa', align: 'top'}, color: {color: '#3b82f6', highlight: '#60a5fa'}, width: 2, arrows: 'to' }
+            ]);
+
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                physics: {
+                    forceAtlas2Based: { gravitationalConstant: -80, centralGravity: 0.02, springLength: 150, springConstant: 0.05 },
+                    maxVelocity: 50, solver: 'forceAtlas2Based', timestep: 0.35, stabilization: { iterations: 150 }
+                },
+                interaction: { hover: true, tooltipDelay: 200 }
+            };
+
+            network = new vis.Network(container, data, options);
+            
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    openNodePanel();
+                } else if (params.edges.length > 0) {
+                    openEdgePanel();
+                } else {
+                    closePanels();
+                }
+            });
+        }
+        
+        window.addEventListener('DOMContentLoaded', initGraph);
+
+        function startTrace() {
+            // Auto-minimize the target params panel
+            document.getElementById('target-params').classList.add('minimized');
+            
+            // Start the live ledger simulation if not already running
+            if(!window.simulationRunning) {
+                window.simulationRunning = true;
+                simulateLedgerStream();
+            }
+        }
+
+        function openNodePanel() {
+            closePanels();
+            document.getElementById('node-panel').classList.add('open');
+        }
+
+        function openEdgePanel() {
+            closePanels();
+            document.getElementById('edge-panel').classList.add('open');
+        }
+
+        function closePanels() {
+            document.getElementById('node-panel').classList.remove('open');
+            document.getElementById('edge-panel').classList.remove('open');
+        }
+
+        // Live Ledger Simulation
+        let eventCount = 12450;
+        const types = ['MIXING', 'BRIDGING', 'TRANSFER', 'SWAP'];
+        const entities = ['Tornado.Cash', 'ThorChain', 'Binance 14', 'Unknown Wallet', 'Lazarus Affiliate'];
+        const typesBadge = {
+            'MIXING': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+            'BRIDGING': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+            'TRANSFER': 'bg-slate-700/50 text-slate-300 border-slate-600',
+            'SWAP': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+        };
+
+        function simulateLedgerStream() {
+            const tbody = document.getElementById('ledger-body');
+            
+            setInterval(() => {
+                eventCount++;
+                document.getElementById('ledger-count').innerText = eventCount.toLocaleString() + " Events";
+
+                const type = types[Math.floor(Math.random() * types.length)];
+                const entityTo = entities[Math.floor(Math.random() * entities.length)];
+                const amt = (Math.random() * 100).toFixed(2);
+                const hash = '0x' + Math.random().toString(16).substr(2, 8) + '...';
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/50 transition cursor-pointer stream-row";
+                tr.innerHTML = `
+                    <td class="p-3 text-slate-400">2026-07-19 ${new Date().toISOString().substr(11,8)}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded border ${typesBadge[type]} text-[9px] font-bold tracking-wider">${type}</span></td>
+                    <td class="p-3 text-blue-400">${hash}</td>
+                    <td class="p-3">0x3b5D... <span class="text-red-400 text-[9px] uppercase">(Target)</span></td>
+                    <td class="p-3">0x${Math.random().toString(16).substr(2,4)}...</td>
+                    <td class="p-3 text-yellow-400">${entityTo}</td>
+                    <td class="p-3 text-right font-bold text-white"><span class="val-usd">$${(amt*3500).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span><span class="val-native">${amt} ETH</span></td>
+                    <td class="p-3 text-slate-400">ERC20_TX</td>
+                    <td class="p-3">Cluster_A92</td>
+                    <td class="p-3 text-slate-500">Root_DPRK_1</td>
+                `;
+                
+                tbody.insertBefore(tr, tbody.firstChild);
+                
+                // Keep only top 50 rows to prevent DOM bloat
+                if(tbody.children.length > 50) {
+                    tbody.removeChild(tbody.lastChild);
+                }
+            }, 2500); // New row every 2.5 seconds
+        }
+        
+        // Initial populate
+        for(let i=0; i<10; i++) {
+            eventCount--;
+            simulateLedgerStream.call(); 
+        }
+    </script>
+</body>
+</html>

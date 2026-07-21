@@ -4,7 +4,7 @@ import re
 
 print("[*] Starting Cloudflare Quick Tunnel...")
 tunnel_proc = subprocess.Popen(
-    ["cloudflared", "tunnel", "--url", "http://127.0.0.1:8000"],
+    [r"..\cloudflared.exe", "tunnel", "--url", "http://127.0.0.1:8000"],
     stdout=subprocess.PIPE,
     stderr=subprocess.STDOUT,
     text=True

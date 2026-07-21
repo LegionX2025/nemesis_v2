@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About NEMESIS | Enterprise Advanced Mock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ENTERPRISE STARRY FLOW THEME (Yellow, Blue, White) */
+        :root {
+            --bg-dark: #0f172a;
+            --brand-blue: #1d4ed8;
+            --brand-yellow: #facc15;
+            --brand-white: #f8fafc;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-border: rgba(250, 204, 21, 0.25);
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--brand-white);
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .starry-canvas {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 40%, var(--brand-blue) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 60%, rgba(250, 204, 21, 0.15) 0%, transparent 35%),
+                        radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            background-size: 200% 200%;
+            filter: blur(80px) saturate(150%);
+            animation: swirl 25s infinite alternate ease-in-out;
+            opacity: 0.8;
+        }
+
+        @keyframes swirl {
+            0% { background-position: 0% 0%; transform: scale(1); }
+            50% { background-position: 100% 100%; transform: scale(1.05); }
+            100% { background-position: 0% 50%; transform: scale(1); }
+        }
+
+        .ento-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .title-glow {
+            font-weight: 900;
+            background: linear-gradient(to right, #ffffff, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.3));
+        }
+        
+        .nav-link {
+            position: relative;
+            color: #cbd5e1;
+            transition: color 0.2s;
+        }
+        .nav-link:hover { color: var(--brand-white); }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 0%; height: 2px;
+            background: var(--brand-yellow);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after { width: 100%; }
+
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div class="starry-canvas"></div>
+
+    <!-- Navigation -->
+    <nav class="ento-panel m-4 px-6 py-4 flex items-center justify-between z-20 sticky top-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center border border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.4)]">
+                <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+            </div>
+            <h1 class="title-glow text-2xl tracking-tight">NEMESIS</h1>
+        </div>
+        <div class="hidden md:flex items-center gap-8 font-medium text-sm tracking-wide">
+            <a href="index.html" class="nav-link">Platform</a>
+            <a href="nemesis_tracer.html" class="nav-link">Omni-Tracer</a>
+            <a href="nemesis_id.html" class="nav-link">Nemesis ID</a>
+            <a href="nemesis_intelligence.html" class="nav-link">Intelligence</a>
+            <a href="about.html" class="nav-link text-white font-semibold">About</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="api_docs.html" class="text-xs font-mono text-blue-300 hover:text-white transition">API Docs</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col items-center justify-center p-8 z-10 text-center mt-4 mb-20">
+        
+        <div class="w-full max-w-4xl ento-panel p-10 text-left relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-8 opacity-10">
+                <i class="fa-solid fa-shield-halved text-9xl"></i>
+            </div>
+            
+            <h2 class="text-3xl font-extrabold mb-6 title-glow">About Nemesis Labs</h2>
+            
+            <div class="space-y-6 text-slate-300 font-light leading-relaxed relative z-10">
+                <p>
+                    Nemesis Labs was founded with a singular mission: to bring absolute transparency to the blockchain ecosystem. As decentralized finance scales, the opacity of cross-chain routing, mixers, and bridging protocols has provided cover for illicit activities.
+                </p>
+                <p>
+                    Our proprietary <strong>Omni-Chain Tracing Engine</strong> utilizes advanced graph theoretical algorithms and machine learning to cut through the noise. By ingesting petabytes of transaction data across 18+ blockchains and mapping it against our 1.2 billion-node ontology, we attribute wallets to real-world entities in milliseconds.
+                </p>
+                <p>
+                    We serve top-tier law enforcement agencies, cyber insurance firms, and institutional custodians, providing them with the intelligence needed to intercept funds, identify threat actors, and comply with global regulatory frameworks.
+                </p>
+            </div>
+
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-white font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-bullseye text-blue-400"></i> Our Vision</h3>
+                    <p class="text-sm text-slate-400">A secure, transparent, and accountable Web3 ecosystem where institutional capital can flow without regulatory or counterparty risk.</p>
+                </div>
+                <div class="bg-slate-800/50 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-white font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-microchip text-yellow-400"></i> Our Technology</h3>
+                    <p class="text-sm text-slate-400">Powered by the GBIO (Global Blockchain Intelligence Ontology) Framework, capable of evaluating 50,000 transactions per second natively.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/50 bg-slate-900/80 backdrop-blur mt-auto py-8 z-10">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between">
+            <div class="flex items-center gap-2 mb-4 md:mb-0">
+                <i class="fa-solid fa-shield-halved text-yellow-500"></i>
+                <span class="text-white font-bold tracking-widest text-sm">NEMESIS LABS © 2026</span>
+            </div>
+            <div class="flex gap-6 text-sm text-slate-400">
+                <a href="#" class="hover:text-white transition">Privacy Policy</a>
+                <a href="#" class="hover:text-white transition">Terms of Service</a>
+                <a href="#" class="hover:text-white transition">Enterprise Support</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,8 +1,16 @@
 import os
 import subprocess
+import sys
 import time
 import re
-from playwright.sync_api import sync_playwright
+
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    print("[*] Playwright not found. Auto-installing dependencies...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
+    subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
+    from playwright.sync_api import sync_playwright
 
 def run_tests():
     print("==================================================")
@@ -17,7 +25,7 @@ def run_tests():
     # 2. Start cloudflared tunnel
     print("[*] Starting Cloudflare Quick Tunnel...")
     tunnel_proc = subprocess.Popen(
-        ["cloudflared", "tunnel", "--url", "http://127.0.0.1:8000"],
+        [r"..\cloudflared.exe", "tunnel", "--url", "http://127.0.0.1:8000"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEMESIS ID Dashboard | Enterprise Advanced Mock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ENTERPRISE STARRY FLOW THEME (Yellow, Blue, White) */
+        :root {
+            --bg-dark: #0f172a;
+            --brand-blue: #1d4ed8;
+            --brand-yellow: #facc15;
+            --brand-white: #f8fafc;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-border: rgba(250, 204, 21, 0.25);
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--brand-white);
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .starry-canvas {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 40%, var(--brand-blue) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 60%, rgba(250, 204, 21, 0.15) 0%, transparent 35%),
+                        radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            background-size: 200% 200%;
+            filter: blur(80px) saturate(150%);
+            animation: swirl 25s infinite alternate ease-in-out;
+            opacity: 0.8;
+        }
+
+        @keyframes swirl {
+            0% { background-position: 0% 0%; transform: scale(1); }
+            50% { background-position: 100% 100%; transform: scale(1.05); }
+            100% { background-position: 0% 50%; transform: scale(1); }
+        }
+
+        .ento-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .title-glow {
+            font-weight: 900;
+            background: linear-gradient(to right, #ffffff, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.3));
+        }
+
+        /* Risk Gauge Animation */
+        .gauge-ring {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            animation: fill-gauge 1.5s ease-out forwards;
+        }
+        @keyframes fill-gauge {
+            to { stroke-dashoffset: 42; } /* 85% full */
+        }
+
+        /* Left Side Menu */
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            border-radius: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            text-align: left;
+        }
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--brand-white);
+        }
+        .menu-btn.active {
+            background: rgba(29, 78, 216, 0.2);
+            color: var(--brand-white);
+            border: 1px solid rgba(29, 78, 216, 0.5);
+            box-shadow: 0 0 15px rgba(29, 78, 216, 0.3);
+            border-left: 4px solid var(--brand-yellow);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .content-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+    <div class="starry-canvas"></div>
+
+    <!-- Navigation -->
+    <nav class="ento-panel m-4 px-6 py-4 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center border border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.4)]">
+                <i class="fa-solid fa-fingerprint text-white text-xl"></i>
+            </div>
+            <h1 class="title-glow text-2xl tracking-tight">NEMESIS ID</h1>
+        </div>
+        <div class="hidden md:flex items-center gap-8 font-medium text-sm tracking-wide">
+            <a href="index.html" class="text-slate-400 hover:text-white transition">Platform</a>
+            <a href="nemesis_tracer.html" class="text-slate-400 hover:text-white transition">Omni-Tracer</a>
+            <a href="nemesis_id.html" class="text-yellow-400 font-bold border-b-2 border-yellow-400 pb-1">Nemesis ID</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="nemesis_id.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg border border-slate-600 font-bold transition">
+                <i class="fa-solid fa-arrow-left mr-2"></i> NEW SEARCH
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex gap-4 p-4 pt-0 min-h-0 z-10 w-full max-w-[1920px] mx-auto">
+        
+        <!-- Sticky Left Side Menu -->
+        <aside class="ento-panel w-72 flex flex-col shrink-0">
+            <!-- Profile Summary Box in Sidebar -->
+            <div class="p-5 border-b border-yellow-500/20 bg-slate-900/50">
+                <div class="flex items-center gap-2 mb-3">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3665/3665985.png" class="w-6 h-6 opacity-80" alt="Ethereum" style="filter: brightness(0) invert(1);" />
+                    <h2 class="text-sm font-mono font-bold text-white truncate" title="0x3b5D17e2236f4D773DA87EE10B71D80C5e5b5772">0x3b5D...772</h2>
+                </div>
+                <div class="mb-3">
+                    <span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider w-full text-center block mb-1 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                        <i class="fa-solid fa-skull-crossbones mr-1"></i> OFAC SANCTIONED
+                    </span>
+                    <span class="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider w-full text-center block">
+                        LAZARUS GROUP
+                    </span>
+                </div>
+                
+                <!-- Mini Gauge -->
+                <div class="flex items-center justify-between mt-4">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Risk Score</div>
+                    <div class="text-lg font-black text-red-500">98/100</div>
+                </div>
+            </div>
+
+            <!-- Navigation Modules -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-1">
+                <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest pl-3 mt-2 mb-2">Modules</div>
+                <button class="menu-btn active" onclick="switchSection('sec-profile', this)">
+                    <i class="fa-solid fa-id-card w-5 text-center"></i> Wallet Profile
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-counterparties', this)">
+                    <i class="fa-solid fa-users-viewfinder w-5 text-center"></i> Counterparties
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-assets', this)">
+                    <i class="fa-solid fa-wallet w-5 text-center"></i> Assets & Chains
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-txs', this)">
+                    <i class="fa-solid fa-list-ul w-5 text-center"></i> Transactions
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-graph', this)">
+                    <i class="fa-solid fa-diagram-project w-5 text-center"></i> Trace Graph
+                </button>
+                
+                <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest pl-3 mt-6 mb-2">Intelligence</div>
+                <button class="menu-btn" onclick="switchSection('sec-aml', this)">
+                    <i class="fa-solid fa-shield-halved w-5 text-center text-red-400"></i> AML Risk & Compliance
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-georisk', this)">
+                    <i class="fa-solid fa-earth-americas w-5 text-center text-amber-400"></i> GeoRisk Analysis
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-osint', this)">
+                    <i class="fa-solid fa-user-secret w-5 text-center"></i> Intelligence (OSINT)
+                </button>
+                <button class="menu-btn" onclick="switchSection('sec-ai', this)">
+                    <i class="fa-solid fa-brain w-5 text-center text-fuchsia-400"></i> AI Insights
+                </button>
+
+                <div class="mt-6 p-3">
+                    <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-lg text-xs uppercase tracking-widest border border-slate-600 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Content Display Area -->
+        <div class="ento-panel flex-1 flex flex-col overflow-y-auto">
+            
+            <!-- SECTION: WALLET PROFILE -->
+            <div id="sec-profile" class="content-section active p-6 md:p-8 space-y-6">
+                <!-- Large Header Info -->
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="text-3xl font-black text-white font-mono mb-2">0x3b5D17e2236f4D773DA87EE10B71D80C5e5b5772</h2>
+                        <div class="text-sm text-slate-400 uppercase tracking-widest font-bold">Target Identity Profile</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-red-500/30 flex items-center gap-4 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+                        <div class="relative w-16 h-16">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#ef4444" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" class="gauge-ring"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 animate-pulse"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Critical Risk</div>
+                            <div class="text-2xl font-black text-red-500">98/100</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Entity Intel -->
+                    <div class="bg-slate-900/60 p-6 rounded-xl border border-slate-700/50 lg:col-span-2">
+                        <h3 class="text-sm font-bold text-white mb-4 border-b border-slate-700 pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-file-shield text-blue-400"></i> Attribution Details
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Primary Entity</div>
+                                <div class="text-sm text-white font-bold">Lazarus Group (DPRK)</div>
+                                <div class="text-xs text-slate-400 mt-1">State-sponsored hacking organization identified by US Treasury.</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Associated Aliases</div>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    <span class="bg-slate-800 text-[10px] px-2 py-1 rounded text-slate-300 border border-slate-700">HIDDEN COBRA</span>
+                                    <span class="bg-slate-800 text-[10px] px-2 py-1 rounded text-slate-300 border border-slate-700">APT38</span>
+                                    <span class="bg-slate-800 text-[10px] px-2 py-1 rounded text-slate-300 border border-slate-700">Whois Team</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Sanction Reference</div>
+                                <a href="#" class="text-sm text-blue-400 hover:text-blue-300 hover:underline font-mono">SDN-78392-A</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="bg-slate-900/60 p-6 rounded-xl border border-slate-700/50">
+                        <h3 class="text-sm font-bold text-white mb-4 border-b border-slate-700 pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-yellow-400"></i> Lifetime Volume
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <span class="text-xs text-slate-400">Total Received</span>
+                                <span class="text-sm font-bold text-green-400 font-mono">+$45,210,500.00</span>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <span class="text-xs text-slate-400">Total Sent</span>
+                                <span class="text-sm font-bold text-red-400 font-mono">-$45,209,120.50</span>
+                            </div>
+                            <div class="flex justify-between items-end pt-2 border-t border-slate-700/50">
+                                <span class="text-xs text-slate-400">Current Balance</span>
+                                <span class="text-sm font-bold text-white font-mono">$1,379.50</span>
+                            </div>
+                            <div class="flex justify-between items-end mt-4">
+                                <span class="text-xs text-slate-400">First Active</span>
+                                <span class="text-[10px] text-slate-300 font-mono">2023-04-12</span>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <span class="text-xs text-slate-400">Last Active</span>
+                                <span class="text-[10px] text-slate-300 font-mono">2 Hours Ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Behavioral Cluster -->
+                    <div class="bg-slate-900/60 p-6 rounded-xl border border-slate-700/50">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-diagram-project text-blue-400"></i> Behavioral Cluster
+                            </h3>
+                            <a href="nemesis_tracer.html" class="text-[9px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded uppercase font-bold transition shadow-[0_0_10px_rgba(29,78,216,0.3)]">Open Omni-Tracer</a>
+                        </div>
+                        <div class="aspect-video bg-slate-800/50 rounded-lg border border-slate-700 relative overflow-hidden flex items-center justify-center p-4">
+                            <!-- Abstract Graphic -->
+                            <div class="relative w-full h-full flex items-center justify-center">
+                                <div class="absolute w-12 h-12 bg-red-500/20 border-2 border-red-500 rounded-full flex items-center justify-center z-20 shadow-[0_0_20px_red]"><i class="fa-solid fa-skull text-red-400"></i></div>
+                                <div class="absolute top-4 left-4 w-8 h-8 bg-slate-800 border border-slate-500 rounded-full flex items-center justify-center z-10"><i class="fa-solid fa-wallet text-slate-400 text-xs"></i></div>
+                                <div class="absolute bottom-4 left-10 w-10 h-10 bg-yellow-500/20 border border-yellow-500 rounded-full flex items-center justify-center z-10"><i class="fa-brands fa-bitcoin text-yellow-400 text-sm"></i></div>
+                                <div class="absolute top-10 right-4 w-10 h-10 bg-blue-500/20 border border-blue-500 rounded-full flex items-center justify-center z-10"><i class="fa-solid fa-shuffle text-blue-400 text-sm"></i></div>
+                                <!-- Linking Lines -->
+                                <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 5;">
+                                    <line x1="50%" y1="50%" x2="20%" y2="20%" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4" opacity="0.5" />
+                                    <line x1="50%" y1="50%" x2="30%" y2="80%" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4" opacity="0.5" />
+                                    <line x1="50%" y1="50%" x2="80%" y2="30%" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4" opacity="0.5" />
+                                </svg>
+                            </div>
+                            <div class="absolute bottom-2 left-2 bg-slate-900/80 px-2 py-1 rounded text-[9px] text-slate-400 font-mono border border-slate-700">14 wallets in heuristic cluster</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Intermediaries Table -->
+                    <div class="bg-slate-900/60 p-6 rounded-xl border border-slate-700/50">
+                        <h3 class="text-sm font-bold text-white mb-4 border-b border-slate-700 pb-2">Recent Intermediaries & Mixers</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="text-slate-500 uppercase tracking-widest bg-slate-800/50">
+                                    <tr>
+                                        <th class="p-2 font-bold rounded-tl">Type</th>
+                                        <th class="p-2 font-bold">Address / Entity</th>
+                                        <th class="p-2 font-bold text-right rounded-tr">Volume</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-700/50 text-slate-300">
+                                    <tr class="hover:bg-slate-800/50 transition">
+                                        <td class="p-2"><span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 text-[9px]">MIXER</span></td>
+                                        <td class="p-2">Tornado.Cash</td>
+                                        <td class="p-2 text-right font-bold text-white">4,500 ETH</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-800/50 transition">
+                                        <td class="p-2"><span class="bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded border border-yellow-500/30 text-[9px]">CEX</span></td>
+                                        <td class="p-2">Binance 14</td>
+                                        <td class="p-2 text-right font-bold text-white">840 ETH</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-800/50 transition">
+                                        <td class="p-2"><span class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-slate-600 text-[9px]">BRIDGE</span></td>
+                                        <td class="p-2">ThorChain Router</td>
+                                        <td class="p-2 text-right font-bold text-white">320 ETH</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Placeholder for other sections -->
+            <div id="sec-placeholder" class="content-section p-8 flex flex-col items-center justify-center h-full opacity-50">
+                <i class="fa-solid fa-code text-4xl text-slate-600 mb-4"></i>
+                <h2 class="text-xl font-bold font-mono text-slate-400">Module Initializing...</h2>
+                <p class="text-slate-500 text-sm mt-2">This intelligence module is currently gathering data streams.</p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        function switchSection(sectionId, btnElem) {
+            // Update buttons
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            btnElem.classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            
+            // If the section exists, show it. Otherwise show placeholder mock.
+            const target = document.getElementById(sectionId);
+            if(target) {
+                target.classList.add('active');
+            } else {
+                document.getElementById('sec-placeholder').classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -460,7 +460,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Lionsgate Nemesis Pro", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*", "null", "http://localhost", "http://127.0.0.1", "https://nemesis-frontend.pages.dev"], allow_origin_regex=".*", allow_methods=["*"], allow_headers=["*"])
 
 class TraceRequest(BaseModel):
     seeds: str
@@ -485,6 +485,11 @@ async def get_logo(): return FileResponse("logo_nemesis.jpeg")
 @app.get("/nemesis-ui.css")
 async def get_css(): 
     if os.path.exists("nemesis-ui.css"): return FileResponse("nemesis-ui.css")
+    return JSONResponse({"status": "not found"}, status_code=404)
+
+@app.get("/tailwind.css")
+async def get_tailwind():
+    if os.path.exists("tailwind.css"): return FileResponse("tailwind.css")
     return JSONResponse({"status": "not found"}, status_code=404)
 
 @app.get("/nemesis-ui.js")
@@ -829,15 +834,7 @@ async def darknet_search(request: Request, q: str = ""):
         result = await stmt.all()
         
         if not result or not result.results:
-            # Fallback mock for testing if DB empty
-            import hashlib
-            hash_id = hashlib.md5(q.encode()).hexdigest()[:6]
-            results = [
-                {"id": f"{hash_id}_1", "type": "WALLET", "data": q if q.startswith("0x") else f"0x1A2B3C4D...{hash_id}", "label": "Lazarus Group (DPRK)", "score": 98},
-                {"id": f"{hash_id}_2", "type": "DOMAIN", "data": f"{q.lower().replace(' ','')}.onion", "label": "Darknet Syndicate", "score": 85},
-                {"id": f"{hash_id}_3", "type": "IP", "data": "104.21.34.45", "label": "C2 Infrastructure", "score": 70}
-            ]
-            return {"results": results}
+            return {"results": []}
             
         docs = result.results
         results = []
@@ -859,19 +856,10 @@ async def darknet_search(request: Request, q: str = ""):
 
 @app.get("/api/darknet/live")
 async def darknet_live():
-    # SIMULATE LIVE CRAWLER TELEMETRY
-    import random
-    import time
-    types = ["WALLET", "EMAIL", "IP", "DOMAIN", "FORUM_HANDLE"]
-    sources = ["TOR_SPIDER", "OKLINK_OSINT", "GAIL_ENGINE", "DEEPWEB_FORUM"]
-    
-    logs = [{
-        "timestamp": int(time.time() * 1000),
-        "source": random.choice(sources),
-        "type": random.choice(types),
-        "data": "0x" + "".join([random.choice("0123456789abcdef") for _ in range(12)]) if random.random() > 0.5 else f"target_{random.randint(100,999)}@onion"
-    }]
-    return JSONResponse(logs)
+    # Attempt to read live crawler telemetry from log or DB
+    # Currently returning empty array to prevent mocked simulations.
+    # Future integration will stream from real OSINT sources.
+    return JSONResponse([])
 
 # --- ADMIN C2 ENDPOINTS ---
 
@@ -926,18 +914,16 @@ async def system_health():
 async def ai_fabric_status():
     from services.ai.router import AIFabricRouter
     router = AIFabricRouter()
-    health = await router.get_system_health()
     
-    # Calculate some mock aggregates for the dashboard
-    total_reqs = 1247
-    avg_lat = 382
+    # In a real environment, get_system_health returns real AI provider statuses
+    health = await router.get_system_health() if hasattr(router, "get_system_health") else []
     
     return {
         "metrics": {
-            "requests_sec": total_reqs,
-            "avg_latency_ms": avg_lat,
-            "fallback_events": 3,
-            "queued_tasks": 12
+            "requests_sec": 0,
+            "avg_latency_ms": 0,
+            "fallback_events": 0,
+            "queued_tasks": len(WS_CLIENTS)
         },
         "providers": health
     }

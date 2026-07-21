@@ -19,7 +19,7 @@ def extract_id(text, pattern):
     return None
 
 def main():
-    base_dir = r"C:\Users\LEGIONX\Downloads\nemesis\tracer_scripts"
+    base_dir = os.getcwd()
     workers_dir = os.path.join(base_dir, "workers")
     
     os.chdir(base_dir)
@@ -116,7 +116,6 @@ id = "{kv_id if kv_id else 'f4099ea1458e4e62ba838734f172846f'}"
 [vars]
 # You must set your Python API URL manually if using Cloudflare Tunnels
 PYTHON_API_URL = "http://127.0.0.1:8000"
-VERCEL_API_URL = "https://nemesisfinal.vercel.app"
 """
     with open(os.path.join(workers_dir, "wrangler.toml"), "w") as f:
         f.write(toml_content)

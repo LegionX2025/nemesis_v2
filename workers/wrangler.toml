@@ -1,4 +1,4 @@
-name = "nemesis-backend"
+name = "nemesis-edge-api"
 main = "src/index.ts"
 compatibility_date = "2024-03-20"
 
@@ -14,11 +14,11 @@ new_sqlite_classes = ["InvestigationSession"]
 binding = "TRACE_QUEUE"
 queue = "nemesis-edge-trace-queue"
 
-# [[queues.consumers]]
-# queue = "nemesis-edge-trace-queue"
-# max_batch_size = 10
-# max_batch_timeout = 5
-# max_retries = 3
+[[queues.consumers]]
+queue = "nemesis-edge-trace-queue"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
 
 [[d1_databases]]
 binding = "NEMESIS_DB"
@@ -31,5 +31,4 @@ id = "f4099ea1458e4e62ba838734f172846f"
 
 [vars]
 # You must set your Python API URL manually if using Cloudflare Tunnels
-PYTHON_API_URL = "http://127.0.0.1:8000"
-VERCEL_API_URL = "https://nemesisfinal.vercel.app"
+PYTHON_API_URL = "https://italiano-queue-auto-sing.trycloudflare.com"

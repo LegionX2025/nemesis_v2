@@ -6,7 +6,7 @@ import time
 # ==============================================================================
 # [NEMESIS OMEGA] PRE-BOOT INITIALIZATION & AUTO-HEALING ENVIRONMENT
 # ==============================================================================
-IS_CLOUD = os.environ.get("VERCEL") or os.environ.get("RENDER")
+IS_CLOUD = os.environ.get("CLOUDFLARE") or os.environ.get("CLOUDFLARED")
 
 if not IS_CLOUD:
     print("\n\033[96m=================================================================\033[0m")
@@ -703,32 +703,141 @@ async def nemesis_id_profile(address: str):
         try:
             res = await IntelligencePipeline.run(address, max_depth=1)
             PIPELINE_CACHE[address] = res
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error fetching profile for {address}: {e}")
             res = {}
+            
+    edges = res.get("edges", [])
+    total_tx = len(edges)
+    
+    # Calculate real stats from edges
+    exposure_usd = 0.0
+    timestamps = []
+    
+    for edge in edges:
+        try:
+            exposure_usd += float(edge.get("amount_native", 0)) * Config.USD_RATES.get(res.get("chain", "ETHEREUM"), 1.0)
+            if edge.get("timestamp"):
+                timestamps.append(edge.get("timestamp"))
+        except:
+            pass
+
+    first_seen = "Unknown"
+    last_seen = "Unknown"
+    if timestamps:
+        try:
+            sorted_ts = sorted(timestamps)
+            first_seen = sorted_ts[0]
+            last_seen = sorted_ts[-1]
+        except:
+            pass
+
+    node_data = res.get("nodes", [{}])[0] if res.get("nodes") else {}
+    risk_score = node_data.get("risk_score", 0)
+    risk_level = "LOW"
+    if risk_score >= 80: risk_level = "CRITICAL"
+    elif risk_score >= 50: risk_level = "ELEVATED"
+    elif risk_score >= 20: risk_level = "MODERATE"
+
     return {
         "address": address,
-        "first_seen": "2023-04-12 09:15:22 UTC",
-        "last_seen": "2024-06-25 14:30:00 UTC",
-        "balance_usd": res.get("investigation", {}).get("exposure_usd", 12500000),
-        "total_tx": len(res.get("edges", [])) or 14205,
-        "status": "Active / Monitored",
-        "risk_level": "CRITICAL"
+        "first_seen": first_seen,
+        "last_seen": last_seen,
+        "balance_usd": exposure_usd,
+        "total_tx": total_tx,
+        "status": "Active" if total_tx > 0 else "No Activity Detected",
+        "risk_level": risk_level
     }
 
 @fastapi_app.get("/api/nemesis_id/intel/{address}")
 async def nemesis_id_intel(address: str):
+    if address in PIPELINE_CACHE:
+        res = PIPELINE_CACHE[address]
+    else:
+        try:
+            res = await IntelligencePipeline.run(address, max_depth=1)
+            PIPELINE_CACHE[address] = res
+        except Exception:
+            res = {}
+            
+    node_data = res.get("nodes", [{}])[0] if res.get("nodes") else {}
+    props = node_data.get("properties", {})
+    darknet = props.get("darknet_intel", {})
+    
+    custodial_entry = "None Detected"
+    if node_data.get("entity_class") == "CEX" or props.get("is_cex"):
+         custodial_entry = props.get("name", "Unknown CEX")
+    
+    osint_summary = props.get("osint_summary", "")
+    if not osint_summary:
+        tags = props.get("tags", [])
+        if tags:
+            osint_summary = "Tags: " + ", ".join(tags)
+        else:
+            osint_summary = "No OSINT footprint found."
+            
+    darknet_mentions = f"Threat Level: {darknet.get('threat_level', 'Unknown')}. Mentions: {darknet.get('darknet_mentions', 0)}"
+
     return {
-        "custodial_entry": "Binance Deposit Address 0x28c...",
-        "osint_intel": "Telegram: @laundromat_rx",
-        "darknet_mentions": "2 Pastebin Dumps, XSS.is"
+        "custodial_entry": custodial_entry,
+        "osint_intel": osint_summary,
+        "darknet_mentions": darknet_mentions
     }
 
 @fastapi_app.get("/api/nemesis_id/aml/{address}")
 async def nemesis_id_aml(address: str):
-    return {
-        "risk_score": 94.2,
-        "classification": "Critical Risk - OFAC / Mixer Exposure"
-    }
+    if address in PIPELINE_CACHE:
+        res = PIPELINE_CACHE[address]
+    else:
+        try:
+            res = await IntelligencePipeline.run(address, max_depth=1)
+            PIPELINE_CACHE[address] = res
+        except Exception:
+            res = {}
+            
+    try:
+        from aml_engine import AMLEngine
+        class DummyEdge:
+            def __init__(self, s, t, v):
+                self.source = s
+                self.target = t
+                self.value = v
+                
+        incoming = []
+        outgoing = []
+        for e in res.get("edges", []):
+            try:
+                amt = float(e.get("amount_native", 0))
+            except:
+                amt = 0.0
+                
+            f_addr = str(e.get("source_node_id", "")).lower()
+            t_addr = str(e.get("target_node_id", "")).lower()
+            
+            if t_addr == address.lower():
+                incoming.append(DummyEdge(f_addr, t_addr, amt))
+            elif f_addr == address.lower():
+                outgoing.append(DummyEdge(f_addr, t_addr, amt))
+                
+        aml = AMLEngine()
+        node_data = res.get("nodes", [{}])[0] if res.get("nodes") else {}
+        osint_score = node_data.get("risk_score", 0)
+        
+        # Determine actual risk score by combining heuristics + osint
+        risk_profile = aml.evaluate_risk(address, incoming, outgoing, osint_score=int(osint_score))
+        
+        return {
+            "risk_score": risk_profile["risk_score"],
+            "classification": risk_profile["classification"],
+            "flags": risk_profile.get("heuristic_flags", [])
+        }
+    except Exception as e:
+        logger.error(f"AML Endpoint Error: {e}")
+        return {
+            "risk_score": 0,
+            "classification": "Unknown (Error processing AML)",
+            "flags": []
+        }
 
 @fastapi_app.get("/api/nemesis_id/tx_history/{address}")
 async def nemesis_id_tx_history(address: str):
@@ -742,20 +851,23 @@ async def nemesis_id_tx_history(address: str):
             res = {}
     
     txs = []
-    for e in res.get("edges", [])[:20]:
+    for e in res.get("edges", [])[:50]:
+        try:
+            amount_native = float(e.get("amount_native", 0))
+            amount_usd = amount_native * Config.USD_RATES.get(res.get("chain", "ETHEREUM"), 1.0)
+        except:
+            amount_native = 0
+            amount_usd = 0
+            
         txs.append({
-            "hash": e.get("tx_hash", "0x" + "0" * 64),
-            "date": e.get("timestamp", "2026-05-25 09:10"),
-            "sender": e.get("source", ""),
-            "receiver": e.get("target", ""),
-            "amount_usd": e.get("value_usd", 0),
-            "amount_native": e.get("amount", 0)
+            "hash": e.get("edge_id", e.get("tx_hash", "")),
+            "date": e.get("timestamp", ""),
+            "sender": e.get("source_node_id", e.get("source", "")),
+            "receiver": e.get("target_node_id", e.get("target", "")),
+            "amount_usd": amount_usd,
+            "amount_native": amount_native
         })
         
-    if not txs:
-        txs = [
-            { "hash": "0xabc...123", "date": "2026-05-25 09:10", "sender": address, "receiver": "0xTornado...", "amount_usd": 150000, "amount_native": 50 }
-        ]
     return {"transactions": txs}
 
 @fastapi_app.get("/api/dossier/full")
@@ -1115,7 +1227,111 @@ import os
 
 # Serve the root directory as static so things like CSS and JS load
 if os.path.exists("nemesis-ui.css"):
-    fastapi_app.mount("/static", StaticFiles(directory="."), name="static")
+    fastapi_app.mount("/static", StaticFiles(directory=".", html=True), name="static")
+
+# ==============================================================================
+# NEMESIS INTELLIGENCE PIPELINE ENDPOINT (GEMINI NLP PROMPT)
+# ==============================================================================
+class PromptRequest(BaseModel):
+    prompt: str
+    files_included: bool = False
+
+@fastapi_app.post("/api/pipeline/prompt")
+async def process_intelligence_prompt(request: PromptRequest):
+    """
+    Takes a natural language prompt, extracts crypto addresses using Gemini,
+    and runs the intelligence pipeline on all discovered entities.
+    """
+    prompt = request.prompt
+    logger.info(f"[PIPELINE] Received Prompt: {prompt[:50]}...")
+    
+    # Extract potential addresses using Gemini
+    addresses = []
+    try:
+        import google.generativeai as genai
+        import json
+        import os
+        import re
+        
+        # Configure Gemini
+        gemini_keys = os.getenv("GEMINI_API_KEYS", "")
+        key_list = [k.strip() for k in gemini_keys.split(",") if k.strip()]
+        if key_list:
+            genai.configure(api_key=key_list[0])
+            model = genai.GenerativeModel('gemini-1.5-pro')
+            
+            # Request JSON extraction of addresses
+            prompt_instruction = f"""
+            Extract all cryptocurrency addresses (Ethereum, Bitcoin, Solana, etc.) from the following text.
+            Return ONLY a valid JSON array of strings. Do not include markdown codeblocks or any other text.
+            If no addresses are found, return [].
+            Text to analyze: {prompt}
+            """
+            response = await asyncio.to_thread(model.generate_content, prompt_instruction)
+            response_text = response.text.strip()
+            
+            # Clean up potential markdown formatting
+            if response_text.startswith("```json"):
+                response_text = response_text[7:-3].strip()
+            elif response_text.startswith("```"):
+                response_text = response_text[3:-3].strip()
+                
+            addresses = json.loads(response_text)
+        else:
+            raise Exception("No Gemini API key found")
+    except Exception as e:
+        logger.warning(f"[PIPELINE] Gemini extraction failed: {e}. Falling back to Regex.")
+        # Fallback regex
+        import re
+        eth_matches = re.findall(r'0x[a-fA-F0-9]{40}', prompt)
+        btc_matches = re.findall(r'\b(1[a-km-zA-HJ-NP-Z1-9]{25,34}|3[a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{39,59})\b', prompt)
+        addresses = list(set(eth_matches + btc_matches))
+    
+    if not addresses:
+        return {"status": "error", "message": "No valid blockchain addresses found in prompt."}
+        
+    results = []
+    # Run the intelligence pipeline for each extracted address
+    from intelligence_pipeline import IntelligencePipeline
+    for addr in addresses:
+        try:
+            intel = await IntelligencePipeline.run(addr)
+            results.append(intel)
+        except Exception as e:
+            logger.error(f"[PIPELINE] Error running on {addr}: {e}")
+            results.append({"address": addr, "error": str(e)})
+            
+    # Generate Google Doc style forensic summary using Gemini
+    forensic_summary = "Forensic Document: Auto-generated from extracted nodes.\n"
+    try:
+        if key_list:
+            model = genai.GenerativeModel('gemini-1.5-pro')
+            summary_prompt = f"""
+            You are an expert blockchain forensic investigator. Create a professional, highly-detailed intelligence dossier 
+            based on the following raw graph data. Summarize the risk, key entities, and suspicious patterns.
+            Raw Data: {json.dumps(results)}
+            """
+            resp = await asyncio.to_thread(model.generate_content, summary_prompt)
+            forensic_summary = resp.text
+    except Exception as e:
+        logger.warning(f"[PIPELINE] Gemini report generation failed: {e}")
+        for res in results:
+            addr = res.get("address", "Unknown")
+            chain = res.get("chain", "Unknown")
+            nodes = res.get("nodes", [])
+            if nodes:
+                label = nodes[0].get("label", "Unknown")
+                risk = nodes[0].get("risk_score", 0)
+                forensic_summary += f"\n- Entity: {label} ({addr}) on {chain}. Risk Score: {risk}/100."
+            
+    return {
+        "status": "success",
+        "extracted_addresses": addresses,
+        "pipeline_results": results,
+        "forensic_report": forensic_summary
+    }
+
+# ==============================================================================
 
 @fastapi_app.get("/api/admin/artifacts")
 async def admin_get_artifacts():

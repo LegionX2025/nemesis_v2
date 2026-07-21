@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEMESIS ID | Enterprise Advanced Mock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ENTERPRISE STARRY FLOW THEME (Yellow, Blue, White) */
+        :root {
+            --bg-dark: #0f172a;
+            --brand-blue: #1d4ed8;
+            --brand-yellow: #facc15;
+            --brand-white: #f8fafc;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-border: rgba(250, 204, 21, 0.25);
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--brand-white);
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .starry-canvas {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 40%, var(--brand-blue) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 60%, rgba(250, 204, 21, 0.15) 0%, transparent 35%),
+                        radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            background-size: 200% 200%;
+            filter: blur(80px) saturate(150%);
+            animation: swirl 25s infinite alternate ease-in-out;
+            opacity: 0.8;
+        }
+
+        @keyframes swirl {
+            0% { background-position: 0% 0%; transform: scale(1); }
+            50% { background-position: 100% 100%; transform: scale(1.05); }
+            100% { background-position: 0% 50%; transform: scale(1); }
+        }
+
+        .ento-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .title-glow {
+            font-weight: 900;
+            background: linear-gradient(to right, #ffffff, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.3));
+        }
+        
+        .nav-link {
+            position: relative;
+            color: #cbd5e1;
+            transition: color 0.2s;
+        }
+        .nav-link:hover { color: var(--brand-white); }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 0%; height: 2px;
+            background: var(--brand-yellow);
+            transition: width 0.3s ease;
+        }
+
+        /* Scan Line Effect */
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            position: absolute;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(250,204,21,0.2) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            animation: scanline 6s linear infinite;
+        }
+        @keyframes scanline {
+            0% { top: -100px; }
+            100% { top: 100%; }
+        }
+
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div class="starry-canvas"></div>
+
+    <!-- Navigation -->
+    <nav class="ento-panel m-4 px-6 py-4 flex items-center justify-between z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center border border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.4)]">
+                <i class="fa-solid fa-fingerprint text-white text-xl"></i>
+            </div>
+            <h1 class="title-glow text-2xl tracking-tight">NEMESIS ID</h1>
+        </div>
+        <div class="hidden md:flex items-center gap-8 font-medium text-sm tracking-wide">
+            <a href="index.html" class="nav-link">Platform</a>
+            <a href="nemesis_tracer.html" class="nav-link">Omni-Tracer</a>
+            <a href="nemesis_id.html" class="nav-link text-white font-semibold">Nemesis ID</a>
+            <a href="nemesis_intelligence.html" class="nav-link">Intelligence</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-xs bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full border border-yellow-500/30 font-mono shadow-[0_0_10px_rgba(250,204,21,0.2)]">
+                API: CONNECTED
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col items-center p-8 z-10 relative">
+        <div class="scanline"></div>
+
+        <div class="w-full max-w-4xl ento-panel p-10 mt-10 text-center relative overflow-hidden">
+            <!-- Background Decoration -->
+            <i class="fa-solid fa-fingerprint absolute -right-20 -bottom-20 text-[250px] text-blue-500/10 rotate-12"></i>
+
+            <h2 class="text-3xl font-extrabold mb-2">Entity Resolution Engine</h2>
+            <p class="text-slate-400 mb-10 max-w-2xl mx-auto font-light">Input an address, domain, or transaction hash to query our 1.2 Billion node ontology for identity attribution, OFAC sanctions, and risk scoring.</p>
+
+            <!-- Search Bar -->
+            <div class="relative max-w-3xl mx-auto mb-16">
+                <input type="text" value="0x3b5D17e2236f4D773DA87EE10B71D80C5e5b5772" placeholder="Enter Wallet Address, TX Hash, ENS, or IP..." 
+                    class="w-full bg-slate-900/60 border-2 border-blue-500/50 rounded-xl py-4 pl-12 pr-32 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition shadow-[0_0_30px_rgba(29,78,216,0.2)]" />
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"></i>
+                <button onclick="window.location.href='nemesis_id_dashboard.html'" class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white font-bold px-6 rounded-lg transition border border-blue-400/50 shadow-[0_0_15px_rgba(29,78,216,0.4)]">
+                    ANALYZE
+                </button>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left relative z-10">
+                <div class="bg-slate-800/40 p-6 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition group">
+                    <div class="w-12 h-12 rounded-lg bg-blue-900/50 flex items-center justify-center mb-4 border border-blue-500/30 group-hover:bg-blue-800/50 transition">
+                        <i class="fa-solid fa-robot text-xl text-blue-400"></i>
+                    </div>
+                    <h3 class="text-white font-bold mb-2">Heuristic Clustering</h3>
+                    <p class="text-sm text-slate-400">Our machine learning models group related addresses based on behavioral patterns and deposit footprints.</p>
+                </div>
+                <div class="bg-slate-800/40 p-6 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition group">
+                    <div class="w-12 h-12 rounded-lg bg-red-900/50 flex items-center justify-center mb-4 border border-red-500/30 group-hover:bg-red-800/50 transition">
+                        <i class="fa-solid fa-skull-crossbones text-xl text-red-400"></i>
+                    </div>
+                    <h3 class="text-white font-bold mb-2">Sanctions & Threat Intel</h3>
+                    <p class="text-sm text-slate-400">Instant cross-referencing against OFAC lists, known ransomware affiliates, and darknet marketplaces.</p>
+                </div>
+                <div class="bg-slate-800/40 p-6 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition group">
+                    <div class="w-12 h-12 rounded-lg bg-yellow-900/50 flex items-center justify-center mb-4 border border-yellow-500/30 group-hover:bg-yellow-800/50 transition">
+                        <i class="fa-solid fa-file-contract text-xl text-yellow-400"></i>
+                    </div>
+                    <h3 class="text-white font-bold mb-2">Dossier Generation</h3>
+                    <p class="text-sm text-slate-400">Export court-ready PDF and JSON dossiers summarizing entity exposure, timeline, and counterparties.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>

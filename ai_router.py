@@ -71,19 +71,9 @@ class AIRouter:
         return {"content": response.text, "model": model, "provider": "google", "offline": False}
 
     def _call_local(self, prompt: str) -> Dict[str, Any]:
-        # Implementation to hit local vLLM API
-        # E.g., via aiohttp or requests
-        logger.info(f"[ROUTER] Hitting local vLLM at {self.local_vllm_url}")
-        # Mocking local response for now
-        time.sleep(1)
-        self.active_provider = "local"
-        self.active_model = "nemesis-vllm"
-        return {
-            "content": f"[OFFLINE INFERENCE] Processed locally via vLLM. Input: {prompt[:50]}...",
-            "model": "nemesis-vllm",
-            "provider": "local",
-            "offline": True
-        }
+        logger.warning(f"[ROUTER] CLOUD AI OFFLINE. Attempting local vLLM at {self.local_vllm_url}")
+        # In a real scenario we'd do a requests.post to self.local_vllm_url
+        raise ConnectionError("Local vLLM endpoint unreachable.")
 
     def _call_mock_provider(self, prompt: str, config: Dict[str, str]) -> Dict[str, Any]:
         raise ValueError(f"API Key for {config['provider']} missing. Triggering next fallback.")

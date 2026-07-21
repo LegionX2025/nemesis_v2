@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEMESIS Master Audit Report</title>
+    <script src="https://kit.fontawesome.com/97825b2eb7.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 2rem; background: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .container { max-width: 1200px; margin: 0 auto; margin-top: 80px; }
+        h1 { color: #f8fafc; font-weight: 800; border-bottom: 2px solid #3b82f6; padding-bottom: 0.5rem; text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        .meta { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #94a3b8; margin-bottom: 2rem; }
+        .category { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(51, 65, 85, 0.8); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .category h2 { margin-top: 0; color: #60a5fa; text-transform: uppercase; font-size: 1.2rem; letter-spacing: 1px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-family: 'JetBrains Mono', monospace; }
+        th, td { text-align: left; padding: 1rem; border-bottom: 1px solid rgba(51, 65, 85, 0.5); }
+        th { color: #94a3b8; font-weight: 600; }
+        tr:hover { background: rgba(51, 65, 85, 0.3); }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; }
+        .badge-pass { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+        .badge-fail { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fa-solid fa-shield-halved"></i> Master Security & E2E Audit Report</h1>
+        <div class="meta">
+            <p><strong>Generated:</strong> 2026-07-14 16:32:07 UTC</p>
+            <p><strong>Target API:</strong> http://127.0.0.1:8000</p>
+            <p><strong>Version:</strong> OMEGA 5.0 Lifecycle Master</p>
+        </div>
+        
+        
+            <div class="category">
+                <h2>Security & Compliance</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="40%">Test Name</th>
+                            <th width="20%">Status</th>
+                            <th width="40%">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr>
+                    <td>Secrets Check nemesis_core.py</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>No hardcoded secrets detected.</td>
+                </tr>
+                
+                <tr>
+                    <td>Secrets Check services/blockchain/collectors.py</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>No hardcoded secrets detected.</td>
+                </tr>
+                
+                <tr>
+                    <td>Secrets Check services/bitquery_builder.py</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>No hardcoded secrets detected.</td>
+                </tr>
+                
+                    </tbody>
+                </table>
+            </div>
+            
+
+            <div class="category">
+                <h2>Static Code Analysis</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="40%">Test Name</th>
+                            <th width="20%">Status</th>
+                            <th width="40%">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr>
+                    <td>nemesis_core.py</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>AST Parsed. Funcs: 9, Classes: 5</td>
+                </tr>
+                
+                <tr>
+                    <td>services/blockchain/collectors.py</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>AST Parsed. Funcs: 1, Classes: 1</td>
+                </tr>
+                
+                <tr>
+                    <td>services/bitquery_builder.py</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>AST Parsed. Funcs: 7, Classes: 1</td>
+                </tr>
+                
+                    </tbody>
+                </table>
+            </div>
+            
+
+            <div class="category">
+                <h2>Frontend E2E Tests</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="40%">Test Name</th>
+                            <th width="20%">Status</th>
+                            <th width="40%">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr>
+                    <td>landing.html UI Load</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>Title: Lionsgate Nemesis Pro | Global Intelligence Platform</td>
+                </tr>
+                
+                <tr>
+                    <td>admin.html Testing Module</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>Module rendered</td>
+                </tr>
+                
+                <tr>
+                    <td>nemesis_id.html Inputs</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>Input forms found</td>
+                </tr>
+                
+                    </tbody>
+                </table>
+            </div>
+            
+
+            <div class="category">
+                <h2>Backend Integration Tests</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="40%">Test Name</th>
+                            <th width="20%">Status</th>
+                            <th width="40%">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr>
+                    <td>Tracer /api/node/graph E2E</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>200 OK intercepted from backend</td>
+                </tr>
+                
+                    </tbody>
+                </table>
+            </div>
+            
+
+            <div class="category">
+                <h2>Performance Benchmarks</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="40%">Test Name</th>
+                            <th width="20%">Status</th>
+                            <th width="40%">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                <tr>
+                    <td>landing.html Load Time</td>
+                    <td><span class="badge badge-pass"><i class='fa-solid fa-check'></i> PASS</span></td>
+                    <td>1.13s</td>
+                </tr>
+                
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="category">
+                <h2>E2E Automated Screenshots</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <h4 style="color:#60a5fa; margin-bottom: 0.5rem; text-align: center;">Landing Page</h4>
+                        <img src="/test_results/1_landing_page.png" alt="Landing Page" style="width: 100%; border-radius: 8px; border: 1px solid rgba(51, 65, 85, 0.8);">
+                    </div>
+                    <div>
+                        <h4 style="color:#60a5fa; margin-bottom: 0.5rem; text-align: center;">Admin Panel</h4>
+                        <img src="/test_results/2_admin_panel.png" alt="Admin Panel" style="width: 100%; border-radius: 8px; border: 1px solid rgba(51, 65, 85, 0.8);">
+                    </div>
+                    <div>
+                        <h4 style="color:#60a5fa; margin-bottom: 0.5rem; text-align: center;">Tracer UI</h4>
+                        <img src="/test_results/3_tracer_ui.png" alt="Tracer UI" style="width: 100%; border-radius: 8px; border: 1px solid rgba(51, 65, 85, 0.8);">
+                    </div>
+                </div>
+            </div>
+        
+    </div>
+    <script src="/global_nav.js"></script>
+
+<!-- GLOBAL NEMESIS AJAX LOADER -->
+<div id="global-ajax-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center; flex-direction: column;">
+    <img src="assets/butterfly_transparent.png" style="width: 100px; height: 100px; animation: pulse-loader 1.5s infinite; filter: drop-shadow(0 0 20px rgba(6,182,212,0.8));">
+    <div style="color: #06b6d4; margin-top: 20px; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px #06b6d4;">NEMESIS SINGULARITY KERNEL</div>
+    <style>
+        @keyframes pulse-loader {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 30px rgba(6,182,212,1)); }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+    </style>
+</div>
+<script>
+    (function() {
+        if (window._nemesisLoaderInitialized) return;
+        window._nemesisLoaderInitialized = true;
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const loader = document.getElementById('global-ajax-loader');
+            if (loader) loader.style.display = 'flex';
+            try {
+                const response = await originalFetch.apply(this, args);
+                return response;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        };
+    })();
+</script>
+</body>
+
+</html>

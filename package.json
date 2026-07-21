@@ -5,5 +5,8 @@
   "scripts": {
     "build": "echo \"No build needed\"",
     "postinstall": "python -m pip install playwright && python -m playwright install chromium"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.3.3"
   }
 }

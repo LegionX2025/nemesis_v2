@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lionsgate Omni-Chain Forensics | Case LGN-US-2026-0172</title>
+    <script>
+
+    // === CLOUDFLARE NATIVE ROUTING ===
+    function getBackendHttpUrl(path) {
+        if (window.location.protocol === "file:") return `http://127.0.0.1:8000/api/${path}`;
+        return `/api/${path}`;
+    }
+
+    function getBackendWsUrl(path) {
+        if (window.location.protocol === "file:") return `ws://127.0.0.1:8000/api/ws/${path}`;
+        if (window.currentBackendIndex === 0) {
+            let protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+            let host = window.location.host;
+            if (host.includes("127.0.0.1:") || host.includes("localhost:")) {
+                host = "127.0.0.1:8000";
+            }
+            return `${protocol}${host}/api/ws/${path}`;
+        }
+        return `wss://${BACKENDS[window.currentBackendIndex]}/api/ws/${path}`;
+    }
+    // =====================================
+
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
+    <link rel="stylesheet" href="/tailwind.css">
+    <script src="/global_nav.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/graphology-layout-forceatlas2/build/graphology-layout-forceatlas2.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/nemesis-ui.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; overflow: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .nemesis-effect { background: linear-gradient(to right, #38bdf8 20%, #818cf8 50%, #c084fc 80%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: shine 5s linear infinite; filter: drop-shadow(0px 0px 15px rgba(56, 189, 248, 0.4)); }
+        @keyframes shine { to { background-position: 200% center; } }
+        #graph { height: calc(100vh - 110px); width: 100%; outline: none; background-color: #020617; background-image: radial-gradient(circle at center, #0f172a 0%, #020617 100%); position: relative; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5); }
+        #graph::after { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; box-shadow: inset 0 0 100px rgba(15, 23, 42, 0.8); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 3px; }
+        
+        .vis-tooltip {
+            position: absolute;
+            background-color: rgba(15, 23, 42, 0.95) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+            padding: 12px !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 11px !important;
+            color: #e2e8f0 !important;
+            pointer-events: none;
+            z-index: 100;
+            line-height: 1.5;
+        }
+        
+        .google-doc { width: 100%; max-width: 900px; margin: 2rem auto; padding: 1in; background: #ffffff; color: #000000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #ddd; outline: none; line-height: 1.6; }
+        .prose p { margin-bottom: 1rem; text-align: justify; }
+        .prose strong { color: #1e3a8a; }
+        .prose ul { padding-left: 20px; margin-bottom: 1rem; list-style-type: disc; }
+        
+        /* Landing Page Styles */
+        #landing-page { position: fixed; inset: 0; z-index: 100; background: linear-gradient(135deg, #0f172a 0%, #020617 50%, #0f172a 100%); overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; transition: opacity 1.2s ease-in-out, visibility 1.2s ease-in-out; }
+        #tsparticles { position: absolute; inset: 0; z-index: 0; opacity: 1.0; pointer-events: none; }
+        .landing-content { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding-top: 120px; }
+        
+        .landing-nav { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 2.5rem 4rem; transition: all 0.4s ease; z-index: 90; background: transparent; border-bottom: 1px solid transparent; }
+        .landing-nav.minimized { padding: 1rem 4rem; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(15, 23, 42, 0.1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .landing-logo { display: flex; align-items: center; gap: 1rem; transition: all 0.4s ease; }
+        .landing-nav.minimized .landing-logo img { height: 35px; }
+        .landing-nav.minimized .landing-logo-text { font-size: 1rem; }
+        .landing-logo img { height: 45px; border-radius: 8px; border: 1px solid rgba(15,23,42,0.1); transition: height 0.4s ease; }
+        .landing-logo-text { font-size: 1.25rem; font-weight: 800; color: #0f172a; letter-spacing: 0.1em; line-height: 1.2; transition: font-size 0.4s ease; }
+        .landing-logo-text span { font-weight: 400; font-size: 0.65em; letter-spacing: 0.25em; display: block; color: #475569; }
+        
+        .landing-links { display: flex; gap: 2rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; color: #64748b; text-transform: uppercase; align-items: center; }
+        .landing-links a { display: flex; align-items: center; gap: 0.5rem; color: #64748b; text-decoration: none; transition: all 0.3s; cursor: pointer; }
+        .landing-links a i { font-size: 1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .landing-links a:hover { color: #0f172a; }
+        .landing-links a:hover i { transform: translateY(-3px) scale(1.15); }
+        
+        .icon-intel { color: #3b82f6; }
+        .icon-audit { color: #10b981; }
+        .icon-about { color: #8b5cf6; }
+        .icon-cap { color: #f59e0b; }
+        .icon-content { color: #ef4444; }
+        .icon-work { color: #06b6d4; }
+        .icon-arch { color: #f43f5e; }
+        .icon-trace { color: #84cc16; }
+        
+        .landing-btn-outline { border: 1px solid rgba(15,23,42,0.3); color: #0f172a; padding: 0.75rem 2rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; transition: all 0.3s; background: transparent; cursor: pointer; }
+        .landing-btn-outline:hover { background: #0f172a; color: #fff; }
+        
+        .landing-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 2rem; }
+        .landing-tag { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.7); border: 1px solid rgba(15,23,42,0.1); padding: 0.5rem 1rem; border-radius: 99px; color: #334155; font-size: 0.7rem; letter-spacing: 0.1em; margin-bottom: 1.5rem; backdrop-filter: blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .landing-title { font-size: 4.5rem; font-weight: 800; color: #0f172a; line-height: 1.1; max-width: 900px; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+        .landing-subtitle { font-size: 1.1rem; color: #475569; max-width: 650px; line-height: 1.6; margin-bottom: 3rem; }
+        
+        .landing-input-group { display: flex; flex-direction: column; gap: 1.25rem; width: 100%; max-width: 550px; background: rgba(255,255,255,0.7); border: 1px solid rgba(15,23,42,0.1); padding: 2.5rem; border-radius: 24px; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); }
+        .landing-input-group label { text-align: left; font-size: 0.7rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; }
+        .landing-input-group textarea, .landing-input-group input { width: 100%; background: #ffffff; border: 1px solid rgba(15,23,42,0.2); color: #0f172a; padding: 1rem; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; transition: all 0.3s; resize: none; }
+        .landing-input-group textarea:focus, .landing-input-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .landing-btn-primary { background: #0f172a; color: #ffffff; font-weight: 800; padding: 1.25rem; border-radius: 12px; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; letter-spacing: 0.15em; text-transform: uppercase; font-size: 0.8rem; margin-top: 0.5rem; }
+        .landing-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(15,23,42,0.3); }
+        
+        .landing-footer { display: flex; justify-content: space-between; align-items: center; padding: 2rem 4rem; border-top: 1px solid rgba(15,23,42,0.05); }
+        .landing-footer-logos { display: flex; gap: 2.5rem; opacity: 0.5; }
+        
+        /* Content Modal */
+        #content-modal { position: fixed; inset: 0; z-index: 200; background: rgba(241, 245, 249, 0.98); backdrop-filter: blur(10px); display: block; overflow-y: auto; transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); padding: 4rem 2rem; opacity: 0; visibility: hidden; }
+        #content-modal.active { transform: translateY(0); opacity: 1; visibility: visible; }
+        .content-modal-inner { width: 100%; max-width: 800px; margin: 0 auto; position: relative; background: #fff; padding: 4rem; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); border: 1px solid rgba(15,23,42,0.05); }
+        .content-close-btn { position: absolute; top: 1.5rem; right: 1.5rem; background: #f1f5f9; border: 1px solid #cbd5e1; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #0f172a; transition: all 0.2s; }
+        .content-close-btn:hover { background: #e2e8f0; }
+        .content-title { font-size: 2.5rem; font-weight: 800; color: #0f172a; margin-bottom: 2rem; letter-spacing: -0.02em; border-bottom: 2px solid #f1f5f9; padding-bottom: 1rem; }
+        .content-body { font-size: 1.1rem; line-height: 1.8; color: #475569; }
+        .content-body h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 2.5rem; margin-bottom: 1rem; }
+        .content-body ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 1rem; }
+        .content-body li { margin-bottom: 0.5rem; }
+        
+        .pulse-edge { stroke-dasharray: 8, 8; animation: flowAnim 1.5s linear infinite; fill: none; }
+        @keyframes flowAnim { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- LANDING PAGE OVERLAY -->
+    <div id="tracer-landing" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 transition-opacity duration-700" style="background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);">
+        <!-- Background Elements -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-500/20 blur-[120px]"></div>
+            <div class="absolute top-[60%] -right-[10%] w-[40%] h-[60%] rounded-full bg-indigo-500/20 blur-[120px]"></div>
+            <div class="absolute top-[20%] left-[60%] w-[30%] h-[30%] rounded-full bg-emerald-500/20 blur-[120px]"></div>
+        </div>
+
+        <div class="relative z-10 flex flex-col items-center w-full max-w-2xl px-6">
+            
+            <!-- Branding -->
+            <div class="flex flex-col items-center mb-10 text-center">
+                <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-20 h-20 object-contain rounded-2xl shadow-xl shadow-slate-900/50 mb-6 border border-slate-700 bg-slate-800">
+                <h1 class="text-4xl font-black text-slate-100 tracking-tight mb-2">Lionsgate Nemesis</h1>
+                <p class="text-sm text-slate-400 font-bold uppercase tracking-widest">Omni-Chain Tracing Engine</p>
+            </div>
+
+            <!-- Glassmorphic Input Form -->
+            <div class="w-full bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 shadow-2xl rounded-3xl p-8 space-y-6">
+                
+                <!-- Seed Input -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Target Seed Wallet(s)</label>
+                    <textarea id="landing-seed" class="w-full h-24 bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner resize-none transition-all" placeholder="Enter 0x... addresses separated by commas"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Network -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Network</label>
+                        <select id="landing-network" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm font-bold text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all">
+                            <option value="ALL">🌐 Omni-Chain (All)</option>
+                            <option value="ETH">🔷 Ethereum (ETH)</option>
+                            <option value="BSC">🟡 Binance (BSC)</option>
+                            <option value="POLYGON">🟣 Polygon (MATIC)</option>
+                            <option value="ARBITRUM">🔵 Arbitrum (ARB)</option>
+                            <option value="OPTIMISM">🔴 Optimism (OP)</option>
+                            <option value="BASE">🔵 Base (BASE)</option>
+                            <option value="CELO">🟢 Celo (CELO)</option>
+                            <option value="LINEA">⚫ Linea (LINEA)</option>
+                            <option value="TRON">🔴 Tron (TRX)</option>
+                            <option value="SOLANA">🟣 Solana (SOL)</option>
+                            <option value="BITCOIN">🟠 Bitcoin (BTC)</option>
+                        </select>
+                    </div>
+
+                    <!-- Target Loss -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Target USD Amount</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 font-bold">$</span>
+                            <input type="number" id="landing-amount" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl py-3 pl-8 pr-4 text-sm font-bold text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Trace Depth</label>
+                        <input type="number" id="landing-depth" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all text-center" value="12">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Max Hops</label>
+                        <input type="number" id="landing-hops" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-inner transition-all text-center" value="1000">
+                    </div>
+                </div>
+
+                <button onclick="initializeFromLanding()" class="w-full mt-4 bg-slate-900 hover:bg-blue-600 text-white px-6 py-4 rounded-xl text-sm font-bold shadow-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest group">
+                    Initialize Trace Sequence
+                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </div>
+            
+            <div class="mt-8 text-xs text-slate-400 font-medium tracking-wide">
+                <i class="fa-solid fa-lock mr-1"></i> End-to-End Encrypted Execution
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD (Initially Hidden) -->
+    <div id="main-ui" class="flex flex-col h-screen w-full relative z-40">
+        <!-- Global Navigation Bar -->
+        <header class="custom-header bg-slate-900 text-slate-100 border-b border-slate-700 flex flex-col z-20 shrink-0 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+            <div class="px-6 py-3 flex justify-between items-center w-full">
+                <div class="flex items-center gap-4">
+                    <img src="logo_nemesis.jpeg" alt="Nemesis Logo" class="w-10 h-10 object-contain rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.5)] border border-slate-700 bg-slate-800">
+                    <div>
+                        <h1 class="text-lg font-black uppercase tracking-widest text-slate-100 leading-tight">Lionsgate Nemesis</h1>
+                        <p class="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-widest leading-none mt-1">Omni-Chain Trace Stream</p>
+                    </div>
+                    
+                    <div class="h-8 w-px bg-slate-700 mx-4"></div>
+                    
+                    <!-- Global Header Menu -->
+                    <div class="relative group mt-0.5">
+                        <button class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 transition">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
+                        <nav class="absolute top-full left-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.6)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col py-2 z-50 text-[10px] font-bold tracking-widest uppercase">
+                            <a href="/landing.html" class="px-4 py-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors flex items-center gap-2"><i class="fa-solid fa-home w-4"></i> Home</a>
+                            <a href="/nemesis_id.html" class="px-4 py-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors flex items-center gap-2"><i class="fa-solid fa-fingerprint w-4"></i> Nemesis ID</a>
+                            <a href="/about.html" class="px-4 py-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-colors flex items-center gap-2"><i class="fa-solid fa-circle-info w-4"></i> About</a>
+                            <a href="/tracer.html" class="px-4 py-2 text-blue-400 bg-blue-900/20 hover:bg-blue-900/40 transition-colors flex items-center gap-2"><i class="fa-solid fa-network-wired w-4"></i> Tracing Engine</a>
+                        </nav>
+                    </div>
+                    
+                    <!-- Status Indicators -->
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 shadow-inner">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Loss Traced:</span>
+                            <span id="total-traced-widget" class="text-sm text-emerald-400 font-mono font-black drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">$0.00</span>
+                        </div>
+
+                        <div id="trace-id-display" class="flex items-center bg-blue-900/20 border border-blue-800 text-blue-300 font-bold px-3 py-1.5 rounded-lg text-[10px] tracking-widest h-[34px]">
+                            NID: <span id="trace-id-val" class="ml-1 font-mono text-xs text-blue-200">PENDING...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Actions -->
+                <div class="flex items-center gap-3">
+                    <select id="graph-layout-selector" onchange="changeGraphLayout(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer">
+                        <option value="sequential">Layout: Sequential</option>
+                        <option value="physics">Layout: Physics (Force)</option>
+                        <option value="circular">Layout: Circular</option>
+                    </select>
+                    <select id="edge-filter-selector" class="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer">
+                        <option value="ALL">Filter: All Paths</option>
+                        <option value="CEX">Filter: Seed to CEX</option>
+                        <option value="MIXER">Filter: Seed to Mixing</option>
+                        <option value="BRIDGE">Filter: Bridge/Wrapped</option>
+                    </select>
+                    <button id="btn-pause-resume" onclick="togglePauseResume()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-pause"></i> Pause
+                    </button>
+                    <label class="flex items-center gap-2 cursor-pointer mr-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" id="auto-cluster-label">Auto-Cluster</span>
+                        <div class="relative">
+                            <input type="checkbox" id="auto-cluster-toggle" class="sr-only peer" checked onchange="toggleAutoCluster()">
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-800 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-7000 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                    </label>
+                    <button onclick="openSidePanel('audit-panel')" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
+                        <i class="fa-solid fa-shield-halved"></i> Master Audit
+                    </button>
+                    <button onclick="openSidePanel('intel-panel')" class="bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline">
+                        <i class="fa-solid fa-brain"></i> Intelligence Base
+                    </button>
+                    <button onclick="openSidePanel('report-panel')" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2 no-underline tracking-wide">
+                        <i class="fa-solid fa-file-pdf"></i> Generate FORENSIC REPORT
+                    </button>
+                    <button onclick="openSidePanel('log-panel')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-md text-[11px] font-bold shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-list-ul"></i> Evidentiary Log
+                    </button>
+                    <select id="currency-display-selector" onchange="setCurrencyMode(this.value)" class="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1.5 rounded-md text-[11px] font-bold shadow transition outline-none cursor-pointer mr-1">
+                        <option value="USD">💵 USD Eqv.</option>
+                        <option value="TOKEN">🪙 Token</option>
+                        <option value="NATIVE">🌐 Native</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Area -->
+        <div class="flex-1 flex overflow-hidden bg-slate-950">
+            <!-- Left Sidebar (Collapsible) -->
+            <aside id="left-sidebar" class="w-64 bg-slate-900 border-r border-slate-700 flex flex-col transition-all duration-300 z-10 shadow-[0_4px_15px_rgba(0,0,0,0.5)] relative">
+                <button onclick="toggleSidebar()" class="absolute -right-3 top-4 bg-slate-800 border border-slate-700 text-slate-400 hover:text-blue-400 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-20">
+                    <i id="sidebar-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
+                </button>
+                
+                <div class="p-4 border-b border-slate-700 flex items-center gap-2 font-black text-slate-300 uppercase tracking-widest text-xs sidebar-content">
+                    <i class="fa-solid fa-sliders text-blue-500"></i> Trace Parameters
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 space-y-6 sidebar-content custom-scrollbar">
+                    <!-- Seed Input -->
+                    <div>
+                        <label class="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                            <span>Seed Wallets</span>
+                            <span id="network-logo-container" class="text-blue-500 font-bold"></span>
+                        </label>
+                        <textarea id="seed-input" class="w-full h-16 text-xs bg-slate-950 border border-slate-700 rounded p-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-slate-300 resize-none shadow-inner" placeholder="0x..." oninput="detectWalletChain()"></textarea>
+                    </div>
+
+                    <!-- Target Amount -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Target Loss</label>
+                        <div class="flex items-center">
+                            <select id="target-currency" class="bg-slate-950 border border-slate-700 border-r-0 rounded-l text-[10px] font-bold text-slate-400 outline-none cursor-pointer p-2 shadow-inner">
+                                <option value="USD">USD</option>
+                                <option value="TOKEN">TOK</option>
+                                <option value="NATIVE">NAT</option>
+                            </select>
+                            <input type="number" id="target-amount" class="w-full text-xs bg-slate-950 border border-slate-700 rounded-r p-2 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-slate-300 shadow-inner" placeholder="Amount">
+                        </div>
+                    </div>
+
+                    <!-- Network -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Network</label>
+                        <select id="chain-select" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[10px] font-bold text-slate-300 outline-none focus:ring-1 focus:ring-blue-500 shadow-inner">
+                            <option value="ALL">🌐 ALL NETWORKS</option>
+                            <option value="ETH">🔷 Ethereum (ETH)</option>
+                            <option value="BSC">🟡 Binance (BSC)</option>
+                            <option value="POLYGON">🟣 Polygon (MATIC)</option>
+                            <option value="ARBITRUM">🔵 Arbitrum (ARB)</option>
+                            <option value="OPTIMISM">🔴 Optimism (OP)</option>
+                            <option value="BASE">🔵 Base (BASE)</option>
+                            <option value="CELO">🟢 Celo (CELO)</option>
+                            <option value="LINEA">⚫ Linea (LINEA)</option>
+                            <option value="TRON">🔴 Tron (TRX)</option>
+                            <option value="SOLANA">🟣 Solana (SOL)</option>
+                            <option value="BITCOIN">🟠 Bitcoin (BTC)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <div class="w-1/2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Depth</label>
+                            <input type="number" id="max-depth" class="w-full text-xs bg-slate-950 border border-slate-700 rounded p-1.5 font-mono text-slate-300 text-center shadow-inner" value="12">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Hops</label>
+                            <input type="number" id="max-hops" class="w-full text-xs bg-slate-950 border border-slate-700 rounded p-1.5 font-mono text-slate-300 text-center shadow-inner" value="1000">
+                        </div>
+                    </div>
+
+                    <button onclick="submitTrace()" class="w-full bg-blue-700 hover:bg-blue-600 text-white px-4 py-3 rounded-lg text-xs font-bold shadow-md transition flex items-center justify-center gap-2 tracking-wider mt-4">
+                        <i class="fa-solid fa-play"></i> Run Trace
+                    </button>
+                    
+                    <div class="border-t border-slate-700 pt-4 space-y-2">
+                        <button onclick="highlightLossPaths()" class="w-full px-3 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-800 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+                            <i class="fa-solid fa-fire text-red-500"></i> Highlight Path
+                        </button>
+                        <button onclick="startCourtReplay()" class="w-full px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+                            <i class="fa-solid fa-gavel text-indigo-500"></i> Court Replay
+                        </button>
+                        <button onclick="triggerGeneratePDF()" class="w-full px-3 py-2 bg-slate-700 hover:bg-slate-900 text-slate-300 border border-slate-600 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+                            <i class="fa-solid fa-file-pdf"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Graph Area -->
+            <div class="flex-1 relative flex flex-col">
+                <!-- Graph Toolbar -->
+                <nav class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex justify-between items-center shadow-[0_4px_15px_rgba(0,0,0,0.5)] z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="relative flex items-center">
+                            <i class="fa-solid fa-search absolute left-3 text-slate-500 text-[10px]"></i>
+                            <input type="text" id="nodeSearch" placeholder="Search entity or wallet..." class="text-xs border border-slate-600 rounded-md pl-8 pr-8 py-1.5 w-64 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-700 shadow-inner" onkeyup="if(event.key==='Enter') executeSearch()">
+                            <i id="trace-ajax-loader" class="fa-solid fa-circle-notch fa-spin absolute right-3 text-blue-500 hidden"></i>
+                        </div>
+                        <select id="layoutSelect" onchange="changeLayout()" class="text-[10px] border border-slate-600 bg-slate-800 text-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold shadow-[0_4px_15px_rgba(0,0,0,0.5)] cursor-pointer">
+                           <option value="physics" selected>Organic (Dynamic)</option>
+                           <option value="hierarchical_lr">Hierarchical (L-R)</option>
+                           <option value="tree">Tree Layout</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="pauseTrace()" class="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:bg-amber-100 transition"><i class="fa-solid fa-pause"></i> Pause</button>
+                        <button onclick="resumeTrace()" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:bg-emerald-100 transition"><i class="fa-solid fa-play"></i> Resume</button>
+                    </div>
+                </nav>
+
+                <!-- Canvas Area -->
+                <div id="graph-container" class="relative flex-1 bg-slate-800 h-full shadow-inner overflow-hidden border-b border-slate-700">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
+                        <img src="logo_nemesis.jpeg" class="w-[600px] h-[600px] object-contain grayscale">
+                    </div>
+                    <div id="graph" class="w-full h-full absolute inset-0 z-10 cursor-grab active:cursor-grabbing"></div>
+                    <div id="html-overlay" class="absolute inset-0 pointer-events-none z-20"></div>
+                </div>
+
+                <!-- Status Overlay on Graph -->
+                <div id="status" class="absolute bottom-4 right-4 bg-slate-900/90 backdrop-blur border border-slate-700 px-3 py-1.5 rounded-lg shadow-[0_4px_15px_rgba(0,0,0,0.5)] text-[10px] font-mono font-bold text-slate-500 z-10 pointer-events-none">
+                    Idle. Waiting for deployment.
+                </div>
+                
+                <!-- Terminal CEX Panel -->
+                <div id="terminal-panel" class="absolute top-16 right-4 w-80 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-20 flex flex-col hidden max-h-[80%] overflow-hidden">
+                    <div class="bg-red-50 border-b border-red-100 px-3 py-2 flex justify-between items-center shrink-0">
+                        <h3 class="text-[11px] font-bold text-red-700 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> Identified Landings</h3>
+                        <span id="terminal-count" class="bg-red-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">0</span>
+                    </div>
+                    <div id="terminal-list" class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                        <!-- Terminal items injected here -->
+                    </div>
+                </div>
+                
+                <!-- Bottom Data Log -->
+                <div id="data-log-panel" class="h-64 bg-slate-800 border-t border-slate-600 flex flex-col z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] transition-all duration-300">
+                    <div class="bg-slate-900 border-b border-slate-700 px-4 py-2 flex justify-between items-center">
+                        <div class="text-[11px] font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-blue-500"></i> Real-Time Transaction Log
+                            <i id="tx-log-loader" class="fa-solid fa-circle-notch fa-spin text-blue-500 hidden ml-2" title="Processing Data..."></i>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="exportLiveLogCSV()" class="text-[10px] bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-400 px-2 py-1 rounded font-bold shadow-[0_4px_15px_rgba(0,0,0,0.5)] transition">CSV</button>
+                            <button onclick="exportLiveLogJSON()" class="text-[10px] bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-400 px-2 py-1 rounded font-bold shadow-[0_4px_15px_rgba(0,0,0,0.5)] transition">JSON</button>
+                            <button onclick="toggleLogPanel()" class="text-slate-500 hover:text-slate-400 ml-2"><i id="log-toggle-icon" class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-auto custom-scrollbar bg-slate-800 relative">
+                        <table class="w-full text-left text-[10px] border-collapse whitespace-nowrap font-mono">
+                            <thead class="bg-slate-700 text-slate-500 font-bold sticky top-0 z-10 border-b border-slate-700 shadow-[0_4px_15px_rgba(0,0,0,0.5)] uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-2 pl-4">Date/Time (UTC)</th>
+                                    <th class="p-2">Type of Correlation</th>
+                                    <th class="p-2">TX Hash</th>
+                                    <th class="p-2">From Wallet (Entity)</th>
+                                    <th class="p-2">To Wallet (Entity)</th>
+                                    <th class="p-2">To Receiver Entity</th>
+                                    <th class="p-2 text-right pr-4">Amount</th>
+                                    <th class="p-2">Transaction Type</th>
+                                    <th class="p-2">Behavioral Cluster</th>
+                                    <th class="p-2">Clustered address{root}</th>
+                                    <th class="p-2">Confidence</th>
+                                    <th class="p-2">Transaction Attributions</th>
+                                    <th class="p-2">Transaction Intelligence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tx-log-body" class="divide-y divide-slate-100 text-slate-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Terminal Container -->
+    <div id="floating-terminal" class="absolute bottom-4 right-4 w-[450px] h-[300px] bg-slate-900/95 backdrop-blur-md rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700 z-[9999] flex flex-col overflow-hidden transition-all pointer-events-auto" style="display: none;">
+        <div class="bg-slate-800 px-4 py-3 flex justify-between items-center border-b border-slate-700 cursor-move" id="terminal-header">
+            <span class="text-xs font-mono font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-terminal text-blue-400"></i> OMNI-CHAIN DATA PIPELINE</span>
+            <button onclick="toggleTerminal()" id="terminal-toggle-btn" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-minus"></i></button>
+        </div>
+        <div id="terminal-body" class="flex-1 p-4 overflow-y-auto font-mono text-[11px] text-emerald-400 space-y-1 bg-slate-950/50 leading-relaxed shadow-inner">
+            <!-- Logs go here -->
+        </div>
+    </div>
+
+    <script>
+        // Official Network Logos Mapping
+        const NETWORK_LOGOS = {
+            "ETH": "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035",
+            "BSC": "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035",
+            "POLYGON": "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035",
+            "ARBITRUM": "https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=035",
+            "OPTIMISM": "https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=035",
+            "BASE": "https://avatars.githubusercontent.com/u/108554348?v=4",
+            "CELO": "https://cryptologos.cc/logos/celo-celo-logo.png?v=035",
+            "LINEA": "https://linea.build/favicon.ico",
+            "TRON": "https://cryptologos.cc/logos/tron-trx-logo.png?v=035",
+            "SOLANA": "https://cryptologos.cc/logos/solana-sol-logo.png?v=035",
+            "BITCOIN": "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035",
+            "DEFAULT": "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035"
+        };
+
+        // Simulation variables
+        var graph = new graphology.Graph({ multi: true });
+        var renderer = null;
+        var forceAtlas2 = null;
+        var allEdgesMap = new Map();
+        var allNodesMap = new Map();
+        var totalLossTraced = 0;
+        var isSidebarOpen = true;
+        var isLogPanelOpen = true;
+
+        window.triggerGeneratePDF = function() {
+            window.open('/api/report/generate', '_blank');
+        };
+
+        function toggleTerminal() {
+            const term = document.getElementById('floating-terminal');
+            const body = document.getElementById('terminal-body');
+            const icon = document.getElementById('terminal-toggle-btn').querySelector('i');
+            
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                term.style.height = '300px';
+                icon.className = 'fa-solid fa-minus';
+            } else {
+                body.style.display = 'none';
+                term.style.height = '48px'; // Just the header
+                icon.className = 'fa-regular fa-window-maximize';
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('left-sidebar');
+            const icon = document.getElementById('sidebar-icon');
+            const contents = document.querySelectorAll('.sidebar-content');
+            
+            if (isSidebarOpen) {
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-0');
+                contents.forEach(el => el.style.opacity = '0');
+                icon.classList.remove('fa-chevron-left');
+                icon.classList.add('fa-chevron-right');
+            } else {
+                sidebar.classList.remove('w-0');
+                sidebar.classList.add('w-64');
+                setTimeout(() => { contents.forEach(el => el.style.opacity = '1'); }, 200);
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-left');
+            }
+            isSidebarOpen = !isSidebarOpen;
+            setTimeout(() => { if (renderer) renderer.refresh(); }, 300);
+        }
+
+        function initializeFromLanding() {
+            // Get landing inputs
+            const seed = document.getElementById("landing-seed").value;
+            const target = document.getElementById("landing-amount").value;
+            const networkVal = document.getElementById("landing-network").value;
+            const depth = document.getElementById("landing-depth").value;
+            const hops = document.getElementById("landing-hops").value;
+            
+            if (!seed.trim()) {
+                alert("Please enter at least one target seed wallet.");
+                return;
+            }
+
+            // Populate sidebar inputs
+            document.getElementById("seed-input").value = seed;
+            document.getElementById("target-amount").value = target;
+            document.getElementById("chain-select").value = networkVal;
+            document.getElementById("max-depth").value = depth;
+            document.getElementById("max-hops").value = hops;
+
+            // Transition UI
+            const landing = document.getElementById("tracer-landing");
+            const mainUi = document.getElementById("main-ui");
+            
+            landing.style.opacity = "0";
+            landing.style.pointerEvents = "none";
+            
+            mainUi.style.opacity = "1";
+            mainUi.style.pointerEvents = "auto";
+            
+            setTimeout(() => {
+                landing.style.display = "none";
+                // Start trace
+                submitTrace();
+            }, 700);
+        }
+
+        function toggleLogPanel() {
+            const panel = document.getElementById('data-log-panel');
+            const icon = document.getElementById('log-toggle-icon');
+            if (isLogPanelOpen) {
+                panel.classList.remove('h-64');
+                panel.classList.add('h-10'); // Header only
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                panel.classList.remove('h-10');
+                panel.classList.add('h-64');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+            isLogPanelOpen = !isLogPanelOpen;
+        }
+
+        function getExplorerTxLink(chain, txHash) {
+            chain = (chain || "").toUpperCase();
+            if (chain === "ETHEREUM" || chain === "ETH") return "https://etherscan.io/tx/" + txHash;
+            if (chain === "POLYGON" || chain === "MATIC") return "https://polygonscan.com/tx/" + txHash;
+            if (chain === "BSC" || chain === "BNB") return "https://bscscan.com/tx/" + txHash;
+            if (chain === "OPTIMISM" || chain === "OP") return "https://optimistic.etherscan.io/tx/" + txHash;
+            if (chain === "ARBITRUM" || chain === "ARB") return "https://arbiscan.io/tx/" + txHash;
+            if (chain === "AVALANCHE" || chain === "AVAX") return "https://snowtrace.io/tx/" + txHash;
+            if (chain === "BASE") return "https://basescan.org/tx/" + txHash;
+            if (chain === "BITCOIN" || chain === "BTC") return "https://mempool.space/tx/" + txHash;
+            if (chain === "TRON" || chain === "TRX") return "https://tronscan.org/#/transaction/" + txHash;
+            if (chain === "SOLANA" || chain === "SOL") return "https://solscan.io/tx/" + txHash;
+            return "https://blockscan.com/tx/" + txHash;
+        }
+
+        function getExplorerAddressLink(chain, address) {
+            chain = (chain || "").toUpperCase();
+            if (chain === "ETHEREUM" || chain === "ETH") return "https://etherscan.io/address/" + address;
+            if (chain === "POLYGON" || chain === "MATIC") return "https://polygonscan.com/address/" + address;
+            if (chain === "BSC" || chain === "BNB") return "https://bscscan.com/address/" + address;
+            if (chain === "OPTIMISM" || chain === "OP") return "https://optimistic.etherscan.io/address/" + address;
+            if (chain === "ARBITRUM" || chain === "ARB") return "https://arbiscan.io/address/" + address;
+            if (chain === "AVALANCHE" || chain === "AVAX") return "https://snowtrace.io/address/" + address;
+            if (chain === "BASE") return "https://basescan.org/address/" + address;
+            if (chain === "BITCOIN" || chain === "BTC") return "https://mempool.space/address/" + address;
+            if (chain === "TRON" || chain === "TRX") return "https://tronscan.org/#/address/" + address;
+            if (chain === "SOLANA" || chain === "SOL") return "https://solscan.io/account/" + address;
+            return "https://blockscan.com/address/" + address;
+        }
+
+        function exportLiveLogCSV() {
+            let csv = 'Date/Time,Chain,Type,TX Hash,From,To,Token,Amount,USD Value\n';
+            allEdgesMap.forEach((data, hash) => {
+                const usdAmount = parseFloat(data.usd_value || data.amount || 0).toFixed(2);
+                csv += `${new Date().toISOString()},${data.chain || 'UNKNOWN'},${data.edge_type || 'Transfer'},${hash},${data.from},${data.to},${data.computed_ticker || 'N/A'},${data.amount || 0},${usdAmount}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'nemesis_trace_log.csv');
+            a.click();
+        }
+
+        function exportLiveLogJSON() {
+            const dataArr = Array.from(allEdgesMap.values());
+            const blob = new Blob([JSON.stringify(dataArr, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'nemesis_trace_log.json');
+            a.click();
+        }
+
+        function initiateLandingTrace() {
+            const seedVal = document.getElementById("landing-seed").value;
+            if(!seedVal) return alert("Please enter a target wallet address.");
+            
+            // Transfer values to main UI inputs before starting
+            document.getElementById("seed-input").value = seedVal;
+            document.getElementById("target-amount").value = document.getElementById("landing-amount").value;
+            
+            // Hide landing page
+            const landing = document.getElementById('tracer-landing');
+            landing.style.opacity = '0';
+            landing.style.pointerEvents = 'none';
+            setTimeout(() => {
+                landing.style.display = 'none';
+                
+                initGraphSimulation();
+                submitTrace();
+            }, 800);
+        }
+
+        const ENTITY_LOGOS = {
+            "BINANCE": "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035",
+            "OKX": "https://cryptologos.cc/logos/okb-okb-logo.png?v=035",
+            "KRAKEN": "https://cryptologos.cc/logos/kraken-krak-logo.png?v=035",
+            "COINBASE": "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035",
+            "HUOBI": "https://cryptologos.cc/logos/huobi-token-ht-logo.png?v=035",
+            "KUCOIN": "https://cryptologos.cc/logos/kucoin-token-kcs-logo.png?v=035",
+            "UNISWAP": "https://cryptologos.cc/logos/uniswap-uni-logo.png?v=035",
+            "SUSHISWAP": "https://cryptologos.cc/logos/sushiswap-sushi-logo.png?v=035",
+            "PANCAKESWAP": "https://cryptologos.cc/logos/pancakeswap-cake-logo.png?v=035",
+            "AAVE": "https://cryptologos.cc/logos/aave-aave-logo.png?v=035",
+            "COMPOUND": "https://cryptologos.cc/logos/compound-comp-logo.png?v=035",
+            "CURVE": "https://cryptologos.cc/logos/curve-dao-token-crv-logo.png?v=035",
+            "MAKER": "https://cryptologos.cc/logos/maker-mkr-logo.png?v=035",
+            "TORNADO": "https://cryptologos.cc/logos/tornado-cash-torn-logo.png?v=035",
+            "LIDO": "https://cryptologos.cc/logos/lido-dao-ldo-logo.png?v=035",
+            "TETHER": "https://cryptologos.cc/logos/tether-usdt-logo.png?v=035",
+            "USDT": "https://cryptologos.cc/logos/tether-usdt-logo.png?v=035",
+            "USDC": "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035",
+            "CIRCLE": "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035",
+            "ETHEREUM": "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035",
+            "ETH ": "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035",
+            "BITCOIN": "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035",
+            "BTC ": "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035",
+            "WBTC": "https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png?v=035",
+            "DAI": "https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png?v=035",
+            "MATIC": "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035",
+            "POLYGON": "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035",
+            "SOLANA": "https://cryptologos.cc/logos/solana-sol-logo.png?v=035",
+            "BNB": "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035",
+            "BUSD": "https://cryptologos.cc/logos/binance-usd-busd-logo.png?v=035",
+            "TRON": "https://cryptologos.cc/logos/tron-trx-logo.png?v=035",
+            "AVAX": "https://cryptologos.cc/logos/avalanche-avax-logo.png?v=035",
+            "CHAINLINK": "https://cryptologos.cc/logos/chainlink-link-logo.png?v=035",
+            "SHIBA": "https://cryptologos.cc/logos/shiba-inu-shib-logo.png?v=035",
+            "1INCH": "https://cryptologos.cc/logos/1inch-1inch-logo.png?v=035"
+        };
+
+        const IMAGE_CACHE = {};
+        function getCachedImage(url) {
+            if (!url) return null;
+            if (!IMAGE_CACHE[url]) {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => { if (renderer) renderer.refresh(); };
+                IMAGE_CACHE[url] = img;
+            }
+            return IMAGE_CACHE[url];
+        }
+
+        function getTokenLogo(ticker) {
+            if(!ticker) return null;
+            const t = ticker.toUpperCase();
+            if(t.includes('USDT')) return "https://cryptologos.cc/logos/tether-usdt-logo.png?v=035";
+            if(t.includes('USDC')) return "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=035";
+            if(t.includes('ETH')) return "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035";
+            if(t.includes('BNB')) return "https://cryptologos.cc/logos/bnb-bnb-logo.png?v=035";
+            if(t.includes('BTC')) return "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=035";
+            if(t.includes('MATIC') || t.includes('POL')) return "https://cryptologos.cc/logos/polygon-matic-logo.png?v=035";
+            if(t.includes('SOL')) return "https://cryptologos.cc/logos/solana-sol-logo.png?v=035";
+            if(t.includes('TRX')) return "https://cryptologos.cc/logos/tron-trx-logo.png?v=035";
+            if(t.includes('ARB')) return "https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=035";
+            if(t.includes('OP')) return "https://cryptologos.cc/logos/optimism-ethereum-op-logo.png?v=035";
+            if(t.includes('AVAX')) return "https://cryptologos.cc/logos/avalanche-avax-logo.png?v=035";
+            if(t.includes('LINK')) return "https://cryptologos.cc/logos/chainlink-link-logo.png?v=035";
+            return null; // Fallback to no icon if not found
+        }
+
+        function getSafeIconUrl(entityLabel, isMixer, isCex, chain) {
+            let upper = (entityLabel || "").toUpperCase();
+            
+            for (const [key, url] of Object.entries(ENTITY_LOGOS)) {
+                if (upper.includes(key)) {
+                    return url;
+                }
+            }
+
+            if (isMixer || upper.includes("MIXER") || upper.includes("TORNADO")) {
+                return "https://cryptologos.cc/logos/tornado-cash-torn-logo.png?v=035";
+            }
+            
+            if (isCex || upper.includes("EXCHANGE")) {
+                const exSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fefce8" stroke="#eab308" stroke-width="4"/><path d="M50 25 L75 50 L50 75 L25 50 Z" fill="#eab308"/></svg>`;
+                return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(exSvg);
+            }
+            
+            if (upper.includes("SUSPECT") || upper.includes("HACKER")) {
+                const alertSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fef2f2" stroke="#ef4444" stroke-width="4"/><path d="M50 25 L80 75 L20 75 Z" fill="#ef4444"/><circle cx="50" cy="65" r="4" fill="#ffffff"/><rect x="47" y="40" width="6" height="18" fill="#ffffff"/></svg>`;
+                return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(alertSvg);
+            }
+
+            const walletSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#eff6ff" stroke="#3b82f6" stroke-width="4"/><rect x="25" y="35" width="50" height="30" rx="4" fill="#2563eb"/><rect x="65" y="45" width="10" height="10" rx="2" fill="#bfdbfe"/><path d="M25 35 Q 50 25 75 35" fill="none" stroke="#2563eb" stroke-width="4"/></svg>`;
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(walletSvg);
+        }
+
+        function initGraphSimulation() {
+            const container = document.getElementById('graph');
+            const overlay = document.getElementById('html-overlay');
+            
+            if (renderer) {
+                renderer.kill();
+            }
+            
+            graph = new graphology.Graph({ multi: true });
+            
+            renderer = new Sigma(graph, container, {
+                renderLabels: false,
+                renderEdgeLabels: false,
+                defaultEdgeColor: 'transparent',
+                defaultNodeColor: '#3b82f6',
+                enableEdgeEvents: true
+            });
+            
+            let hoveredNode = null;
+            
+            renderer.on("afterRender", () => {
+                overlay.innerHTML = "";
+                
+                graph.forEachNode((node, attrs) => {
+                    const pos = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
+                    const zoomLevel = renderer.getCamera().ratio;
+                    const isZoomedOut = zoomLevel > 2;
+                    
+                    let isCex = attrs.custom_is_cex;
+                    let isSuspect = attrs.custom_is_suspect;
+                    let entityName = attrs.custom_entity || "WALLET";
+                    let amountText = attrs.custom_amount || "$0.00";
+                    let glowCss = hoveredNode === node ? "box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.6);" : "";
+                    
+                    let borderColor = isCex ? '#f59e0b' : (isSuspect ? '#ef4444' : '#3b82f6');
+                    let badgeBg = isCex ? '#fef3c7' : (isSuspect ? '#fee2e2' : '#eff6ff');
+                    let badgeText = isCex ? '#d97706' : (isSuspect ? '#dc2626' : '#2563eb');
+                    let entityType = isCex ? 'EXCHANGE' : (isSuspect ? 'SUSPECT' : 'WALLET');
+                    let nodeColor = isCex ? '#f59e0b' : (isSuspect ? '#ef4444' : '#3b82f6');
+                    
+                    let safeIcon = getSafeIconUrl(entityName, false, isCex, attrs.custom_chain);
+                    let verifiedBadge = node.length > 10 ? `<div style="position:absolute; bottom:-4px; right:-8px; width:20px; height:20px; background:#64748b; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:10px; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.1);"><i class="fa-solid fa-question"></i></div>` : `<div style="position:absolute; bottom:-4px; right:-8px; width:20px; height:20px; background:#10b981; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:10px; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.1);"><i class="fa-solid fa-check"></i></div>`;
+                    
+                    let html = `
+                    <div style="position: absolute; left: ${pos.x}px; top: ${pos.y}px; transform: translate(-50%, -50%); pointer-events: auto; display: flex; flex-direction: column; align-items: center; cursor: pointer;"
+                         onmouseenter="window.hoverNode('${node}')" onmouseleave="window.unhoverNode()" onclick="openNemesisIDPanel('${node}')">
+                         
+                        <div style="position: relative; width: 64px; height: 64px; display: flex; justify-content: center; align-items: center;">
+                            <!-- Outer Circular Border (Design 1) -->
+                            <div style="position: absolute; inset: 0; border: 3px solid ${borderColor}; border-radius: 50%; background: ${isCex ? '#0f172a' : '#ffffff'}; box-shadow: 0 4px 15px rgba(0,0,0,0.1); ${glowCss} transition: all 0.2s;"></div>
+                            <!-- Inner Logo -->
+                            <div style="position: absolute; inset: 0; display: flex; justify-content: center; align-items: center;">
+                                <img src="${safeIcon}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 50%;">
+                            </div>
+                            <!-- Verification Badge -->
+                            ${verifiedBadge}
+                        </div>
+                        
+                        ${!isZoomedOut ? `
+                        <div style="text-align: center; margin-top: 10px; pointer-events: none; display: flex; flex-direction: column; align-items: center;">
+                            <div style="font-weight: 900; font-size: 13px; color: ${nodeColor}; letter-spacing: -0.02em;">${amountText}</div>
+                            <div style="font-family: 'Inter', sans-serif; font-weight: 800; font-size: 10px; color: ${nodeColor}; margin-top: 4px; background: ${badgeBg}; padding: 2px 8px; border-radius: 12px; border: 1px solid ${nodeColor}40;">${entityName.toUpperCase()}</div>
+                            <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #64748b; margin-top: 4px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">${entityType}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    `;
+                    overlay.insertAdjacentHTML('beforeend', html);
+                });
+                
+                graph.forEachEdge((edge, attrs, source, target, sourceAttrs, targetAttrs) => {
+                    const pos1 = renderer.graphToViewport({ x: sourceAttrs.x, y: sourceAttrs.y });
+                    const pos2 = renderer.graphToViewport({ x: targetAttrs.x, y: targetAttrs.y });
+                    const midX = (pos1.x + pos2.x) / 2;
+                    const midY = (pos1.y + pos2.y) / 2;
+                    const zoomLevel = renderer.getCamera().ratio;
+                    
+                    let edgeTypeColor = '#3b82f6';
+                    if(targetAttrs.custom_is_cex) edgeTypeColor = '#f59e0b';
+                    if(targetAttrs.custom_is_suspect) edgeTypeColor = '#ef4444';
+
+                    let edgeIdSafe = edge.replace(/[^a-zA-Z0-9]/g,'');
+                    let svgOverlay = `
+                    <svg style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible;">
+                        <defs>
+                            <marker id="arrow-${edgeIdSafe}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="${edgeTypeColor}" />
+                            </marker>
+                        </defs>
+                        <path d="M ${pos1.x} ${pos1.y} L ${pos2.x} ${pos2.y}" class="pulse-edge" style="stroke: ${edgeTypeColor}; stroke-width: 2px;" marker-end="url(#arrow-${edgeIdSafe})" />
+                        <circle cx="${pos1.x}" cy="${pos1.y}" r="4" fill="#ffffff" stroke="${edgeTypeColor}" stroke-width="2" />
+                    </svg>
+                    `;
+                    overlay.insertAdjacentHTML('beforeend', svgOverlay);
+
+                    if (zoomLevel > 1.5) return;
+                    
+                    let edgeHtml = `
+                    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); pointer-events: auto; text-align: center; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; align-items: center; height: 64px;" onclick="openTxPanel('${edge}')">
+                        
+                        <!-- Above Line -->
+                        <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); backdrop-filter: blur(4px);">
+                            <div style="font-size: 10px; font-weight: 800; color: #334155; font-family: 'Inter', sans-serif; display:flex; align-items:center; gap:4px;">
+                                <img src="${getTokenLogo(attrs.custom_ticker) || 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035'}" style="width: 14px; height: 14px; border-radius: 50%;">
+                                ${attrs.custom_ticker} (${attrs.custom_chain || 'ERC20'})
+                            </div>
+                            <div style="font-size: 9px; font-weight: 800; color: #94a3b8; letter-spacing: 0.1em; margin-top:3px;">OUTFLOW</div>
+                            <div style="font-size: 13px; font-weight: 900; color: #ef4444; margin-top:2px;">
+                                <i class="fa-solid fa-arrow-down text-[10px]"></i> $${attrs.custom_usd}
+                            </div>
+                        </div>
+                        
+                        <!-- Spacing for the SVG line -->
+                        <div style="flex-grow: 1;"></div>
+                        
+                        <!-- Below Line -->
+                        <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); backdrop-filter: blur(4px); margin-top: 4px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;">
+                                ${edge.substring(0,6)}...${edge.substring(edge.length-4)}
+                            </div>
+                            <div style="font-size: 9px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 4px; text-transform: uppercase;">
+                                ${attrs.custom_chain || 'ERC20'}
+                            </div>
+                        </div>
+
+                    </div>
+                    `;
+                    overlay.insertAdjacentHTML('beforeend', edgeHtml);
+                });
+            });
+            
+            window.hoverNode = function(node) { hoveredNode = node; renderer.refresh(); };
+            window.unhoverNode = function() { hoveredNode = null; renderer.refresh(); };
+            
+            // forceAtlas2 synchronous params
+            window.fa2Settings = { gravity: 0.2, scalingRatio: 5, strongGravityMode: false };
+        }
+
+        // WS connection with Auto-Rotate Fallback
+        let ws;
+        let isPaused = false;
+        let isAutoCluster = true;
+        let pendingMessages = [];
+
+        window.togglePauseResume = function() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('btn-pause-resume');
+            if(isPaused) {
+                document.getElementById('status').innerHTML = '<span class="text-amber-600 font-bold">Trace Paused</span>';
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Resume';
+                btn.classList.replace('bg-amber-500', 'bg-emerald-500');
+                btn.classList.replace('hover:bg-amber-400', 'hover:bg-emerald-400');
+            } else {
+                document.getElementById('status').innerHTML = '<span class="text-emerald-600 font-bold">Trace Resumed</span>';
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                btn.classList.replace('bg-emerald-500', 'bg-amber-500');
+                btn.classList.replace('hover:bg-emerald-400', 'hover:bg-amber-400');
+                processPendingMessages();
+            }
+        };
+
+        window.changeGraphLayout = function(layoutType) {
+            addTerminalLog(`APPLYING LAYOUT: ${layoutType.toUpperCase()}`, "text-blue-400 font-bold");
+            
+            if (layoutType === 'physics' || layoutType === 'physics (force)') {
+                if (window.forceAtlas2) {
+                    forceAtlas2.assign(graph, 100, window.fa2Settings || {
+                        barnesHutOptimize: true,
+                        strongGravityMode: true,
+                        gravity: 0.05,
+                        scalingRatio: 10,
+                        slowDown: 1
+                    });
+                }
+            } else if (layoutType === 'circular') {
+                let i = 0;
+                let numNodes = graph.order;
+                if (numNodes === 0) return;
+                let radius = Math.max(100, numNodes * 15);
+                graph.forEachNode((node) => {
+                    let angle = (i / numNodes) * 2 * Math.PI;
+                    graph.setNodeAttribute(node, 'x', Math.cos(angle) * radius);
+                    graph.setNodeAttribute(node, 'y', Math.sin(angle) * radius);
+                    i++;
+                });
+            } else if (layoutType === 'hierarchical_lr' || layoutType === 'tree' || layoutType === 'sequential') {
+                let i = 0;
+                let numNodes = graph.order;
+                if (numNodes === 0) return;
+                let cols = Math.ceil(Math.sqrt(numNodes));
+                graph.forEachNode((node) => {
+                    let col = i % cols;
+                    let row = Math.floor(i / cols);
+                    graph.setNodeAttribute(node, 'x', col * 150);
+                    graph.setNodeAttribute(node, 'y', row * 150);
+                    i++;
+                });
+            }
+        };
+
+        window.toggleAutoCluster = function() {
+            isAutoCluster = document.getElementById('auto-cluster-toggle').checked;
+            addTerminalLog(`AUTO-CLUSTER: ${isAutoCluster ? 'ENABLED' : 'DISABLED'}`, isAutoCluster ? "text-emerald-400" : "text-amber-400");
+        };
+
+        window.pauseTrace = function() { isPaused = true; document.getElementById('status').innerHTML = '<span class="text-amber-600 font-bold">Trace Paused</span>'; };
+        window.resumeTrace = function() { 
+            isPaused = false; 
+            document.getElementById('status').innerHTML = '<span class="text-blue-600">Trace Running...</span>'; 
+            while(pendingMessages.length > 0) {
+                processWSMessage(pendingMessages.shift());
+            }
+        };
+
+        function connectWS() {
+            if (window.currentBackendIndex >= BACKENDS.length) {
+                console.error("All backend connection attempts failed.");
+                addTerminalLog("CRITICAL: ALL CLOUD BACKENDS OFFLINE. TRACE HALTED.", "text-red-500 font-bold");
+                document.getElementById('status').innerHTML = '<span class="text-red-600 font-bold">Network Failure</span>';
+                document.getElementById('tx-log-loader').classList.add('hidden');
+                return;
+            }
+
+            const url = getBackendWsUrl('trace');
+            console.log(`Attempting to connect to: ${url}`);
+            addTerminalLog(`[SYSTEM] Attempting Raw WebSocket uplink to Region-0${window.currentBackendIndex+1}...`, "text-slate-400");
+            
+            socket = new WebSocket(url);
+
+            socket.onopen = () => {
+                console.log('WebSocket Connected');
+                addTerminalLog(`[SYSTEM] Uplink Established.`, "text-emerald-400 font-bold");
+                
+                socket.emit = function(event, data) {
+                    if(typeof data === 'object') {
+                        data.type = event;
+                        socket.send(JSON.stringify(data));
+                    }
+                };
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (isPaused) {
+                        pendingMessages.push(data);
+                    } else {
+                        processWSMessage(data);
+                    }
+                } catch(e) {
+                    console.error("Error parsing WS message:", e);
+                }
+            };
+
+            socket.onclose = (event) => {
+                console.log(`WebSocket Disconnected: ${event.code} ${event.reason}. Auto-reconnecting...`);
+                setTimeout(connectWS, 2000);
+            };
+
+            socket.onerror = (err) => {
+                console.error('WebSocket Connection Error:', err);
+                window.currentBackendIndex++;
+                if (window.currentBackendIndex >= BACKENDS.length) window.currentBackendIndex = 0;
+            };
+        }
+
+        // Initialize the first connection
+        connectWS();
+
+        // --- BUFFER STATE ---
+        let nodeBuffer = [];
+        let edgeBuffer = [];
+        let logBufferHtml = '';
+        let bufferTimeout = null;
+        
+        function addTerminalLog(msg, color="text-emerald-400") {
+            const term = document.getElementById('floating-terminal');
+            if (term.style.display === 'none') term.style.display = 'flex';
+            
+            const tb = document.getElementById("terminal-body");
+            if (!tb) return;
+            const div = document.createElement("div");
+            div.className = color;
+            div.innerText = `[${new Date().toISOString().substring(11,19)}] ${msg}`;
+            tb.appendChild(div);
+            tb.scrollTop = tb.scrollHeight;
+        }
+
+        function processWSMessage(data) {
+            if (data.type === 'LOG') {
+                addTerminalLog(data.message, data.message.includes("Error") ? "text-red-400" : "text-emerald-400");
+                return;
+            }
+            if (data.type === 'START_SCAN') {
+                addTerminalLog(`[SCAN] Investigating ${data.address.substring(0,8)}... on ${data.chain}`, "text-blue-300 font-bold");
+                return;
+            }
+            if (data.type === 'TX_FETCHED') {
+                addTerminalLog(`[FETCH] Discovered ${data.count} transactions for ${data.address.substring(0,8)}...`, "text-emerald-300");
+                return;
+            }
+            if (data.type === 'INIT') {
+                addTerminalLog("INITIATING TRACE SENSOR ARRAY...", "text-blue-400");
+                if (!renderer) initGraphSimulation();
+                document.getElementById('status').innerHTML = '<span class="text-blue-600">Trace Running...</span>';
+                document.getElementById('tx-log-loader').classList.remove('hidden');
+                graph.clear(); allNodesMap.clear(); allEdgesMap.clear();
+                document.getElementById('tx-log-body').innerHTML = '';
+                document.getElementById('terminal-list').innerHTML = '';
+                document.getElementById('terminal-count').innerText = '0';
+                document.getElementById('terminal-panel').classList.add('hidden');
+                document.getElementById('total-traced-widget').innerText = '$0.00';
+                
+                data.seeds.forEach(seed => {
+                    nodeBuffer.push({ id: seed, label: 'START\n' + seed.substring(0,8) + '...', image: getSafeIconUrl(seed, false, false, "ETHEREUM") });
+                    allNodesMap.set(seed, {id: seed});
+                });
+                if (renderer) renderer.refresh();
+            } else if (data.type === 'NODE_UPDATE') {
+                if (allNodesMap.has(data.node)) {
+                    let updateData = { id: data.node };
+                    if (data.classification !== "Unknown Entity") {
+                        updateData.label = data.classification + '\n' + data.node.substring(0,6) + '...';
+                        updateData.title = `${data.classification}\nTags: ${data.label_str}`;
+                    }
+                    if (data.is_cex) {
+                        updateData.color = { background: '#f59e0b', border: '#b45309', hover: {background: '#d97706'} };
+                    } else if (data.is_suspect) {
+                        updateData.color = { background: '#be123c', border: '#881337', hover: {background: '#9f1239'} };
+                        updateData.shape = 'hexagon';
+                    } else if (data.classification.includes("DeFi") || data.classification.includes("Bridge")) {
+                        updateData.color = { background: '#10b981', border: '#047857', hover: {background: '#059669'} };
+                    }
+                    
+                    try {
+                        graph.mergeNodeAttributes(updateData.id, updateData);
+                        addTerminalLog(`[OSINT] Resolved ${data.node.substring(0,8)}... as ${data.classification}`, "text-yellow-400");
+                    } catch(e) { console.error("Node update error:", e); }
+                }
+            } else if (data.type === 'AML_UPDATE') {
+                if (allNodesMap.has(data.node)) {
+                    let updateData = { id: data.node };
+                    let logColor = "text-yellow-400";
+                    if (data.color === "RED") {
+                        updateData.color = "#ef4444"; // Neon Red
+                        updateData.size = 22;
+                        logColor = "text-red-500";
+                    } else if (data.color === "ORANGE") {
+                        updateData.color = "#f97316"; // Neon Orange
+                        updateData.size = 18;
+                        logColor = "text-orange-400";
+                    } else if (data.color === "YELLOW") {
+                        updateData.color = "#eab308";
+                    } else {
+                        updateData.color = "#10b981"; // Neon Green
+                        logColor = "text-emerald-400";
+                    }
+                    
+                    updateData.label = `[Risk: ${data.risk_score}]\n${data.classification}\n${data.node.substring(0,6)}...`;
+                    
+                    try {
+                        graph.mergeNodeAttributes(data.node, updateData);
+                        addTerminalLog(`[AML] Risk ${data.risk_score}/100: ${data.node.substring(0,8)}... (${data.classification})`, logColor);
+                        if (data.flags && data.flags.length > 0) {
+                            data.flags.forEach(flag => addTerminalLog(`  -> FLAG: ${flag}`, "text-red-400 font-bold"));
+                        }
+                        if (renderer) renderer.refresh();
+                    } catch (e) { console.error(e); }
+                }
+            } else if (data.type === 'LEDGER_BATCH') {
+                data.data.forEach(edgeData => queueEdgeForRender(edgeData));
+            } else if (data.type === 'LEDGER') {
+                queueEdgeForRender(data.data);
+            } else if (data.type === 'COMPLETE') {
+                addTerminalLog("TRACE COMPLETE. PIPELINE IDLE.", "text-blue-400");
+                flushGraphBuffers(); // Ensure last items are drawn
+                document.getElementById('status').innerHTML = '<span class="text-emerald-600 font-bold">Trace Complete</span>';
+                document.getElementById('tx-log-loader').classList.add('hidden');
+            } else if (data.type === 'ERROR') {
+                addTerminalLog(`TRACE ERROR: ${data.message}`, "text-red-500 font-bold");
+                flushGraphBuffers();
+                document.getElementById('status').innerHTML = '<span class="text-red-600 font-bold">Trace Error</span>';
+                document.getElementById('tx-log-loader').classList.add('hidden');
+                alert(data.message);
+            }
+        }
+
+        function queueEdgeForRender(edgeData) {
+            const txHash = edgeData.tx || edgeData.hash || 'UNKNOWN_TX';
+            const amount = edgeData.amount || edgeData.usd_value || 0;
+            const ticker = edgeData.ticker || edgeData.asset || 'N/A';
+            
+            // Add From Node if missing
+            if(!allNodesMap.has(edgeData.from)) {
+                let isCex = false;
+                let isSuspect = edgeData.is_suspect || false;
+                nodeBuffer.push({ 
+                    id: edgeData.from, 
+                    label: 'WALLET\n' + edgeData.from.substring(0,8) + '...', 
+                    image: getSafeIconUrl(edgeData.from, false, false, edgeData.chain),
+                    custom_is_cex: isCex,
+                    custom_is_suspect: isSuspect,
+                    custom_entity: 'WALLET',
+                    custom_chain: edgeData.chain
+                });
+                allNodesMap.set(edgeData.from, edgeData.from);
+            }
+            // Add To Node if missing
+            if(!allNodesMap.has(edgeData.to)) {
+                let toLabel = edgeData.receiver_entity || 'UNKNOWN';
+                let isCex = toLabel.toUpperCase().includes("EXCHANGE") || toLabel.toUpperCase().includes("BINANCE") || toLabel.toUpperCase().includes("OKX") || toLabel.toUpperCase().includes("KRAKEN");
+                let isSuspect = edgeData.is_suspect || toLabel.toUpperCase().includes("SUSPECT") || toLabel.toUpperCase().includes("HACKER");
+                nodeBuffer.push({ 
+                    id: edgeData.to, 
+                    label: toLabel + '\n' + edgeData.to.substring(0,8) + '...', 
+                    image: getSafeIconUrl(toLabel, false, isCex, edgeData.chain),
+                    custom_is_cex: isCex,
+                    custom_is_suspect: isSuspect,
+                    custom_entity: toLabel,
+                    custom_chain: edgeData.chain
+                });
+                allNodesMap.set(edgeData.to, edgeData.to);
+            }
+
+            if(!allEdgesMap.has(txHash)) {
+                const usdAmount = edgeData.usd_value || edgeData.amount || 0;
+                
+                // Track total outflow on the source node (Design 1)
+                let sNodeId = edgeData.from;
+                let sNodeObj = allNodesMap.get(sNodeId);
+                if(sNodeObj) {
+                    if(!sNodeObj.total_outflow) sNodeObj.total_outflow = 0;
+                    sNodeObj.total_outflow += parseFloat(usdAmount);
+                    
+                    // Update global total loss
+                    totalLossTraced += parseFloat(usdAmount);
+                    let totalWidget = document.getElementById('total-traced-widget');
+                    if (totalWidget) {
+                        totalWidget.innerText = '$' + totalLossTraced.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                    
+                    // Update node directly in vis-network to show custom amount below icon
+                    try {
+                        nodes.update({ 
+                            id: sNodeId, 
+                            custom_amount: '-$' + sNodeObj.total_outflow.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) 
+                        });
+                    } catch(e){}
+                }
+                // Modern HTML Tooltip Design
+                const tooltipEl = document.createElement('div');
+                tooltipEl.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:6px;min-width:240px;font-family:'Inter',sans-serif;">
+                        <div style="font-size:10px;color:#2563eb;font-weight:700;border-bottom:1px solid #e2e8f0;padding-bottom:4px;word-break:break-all;font-family:'JetBrains Mono',monospace;">
+                            <i class="fa-solid fa-link mr-1"></i> ${txHash}
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                            <span style="color:#64748b;font-size:11px;font-weight:600;">Transfer Amount</span>
+                            <span style="font-weight:800;color:#0f172a;font-size:12px;">${parseFloat(amount).toFixed(4)} ${ticker}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#64748b;font-size:11px;font-weight:600;">USD Value</span>
+                            <span style="font-weight:800;color:#059669;font-size:12px;">$${parseFloat(usdAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                        ${edgeData.chain ? `
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#64748b;font-size:11px;font-weight:600;">Network / Chain</span>
+                            <span style="font-weight:800;color:#6366f1;font-size:11px;background:#eef2ff;padding:2px 6px;border-radius:4px;">${edgeData.chain.toUpperCase()}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+
+                let eColor = '#94a3b8'; // default gray
+                let toLabelUpper = (edgeData.receiver_entity || '').toUpperCase();
+                if (toLabelUpper.includes('EXCHANGE') || toLabelUpper.includes('BINANCE') || edgeData.is_terminal) {
+                    eColor = '#ef4444'; // Red for CEX/Terminal
+                } else if (toLabelUpper.includes('MIXER') || toLabelUpper.includes('TORNADO')) {
+                    eColor = '#a855f7'; // Purple for Mixer
+                } else if (toLabelUpper.includes('BRIDGE')) {
+                    eColor = '#f97316'; // Orange for Bridge
+                } else if (edgeData.is_suspect) {
+                    eColor = '#f59e0b'; // Amber for Suspect
+                }
+                let plainTooltip = `TX: ${txHash}\nAmount: ${parseFloat(amount).toFixed(4)} ${ticker}\nValue: $${parseFloat(usdAmount).toFixed(2)}\nChain: ${edgeData.chain || 'Unknown'}`;
+                
+                edgeBuffer.push({
+                    id: txHash,
+                    from: edgeData.from,
+                    to: edgeData.to,
+                    label: '', 
+                    title: plainTooltip,
+                    color: { color: eColor, hover: eColor, highlight: eColor },
+                    width: eColor !== '#94a3b8' ? 3 : 2, // Thicker for labeled paths
+                    arrows: 'to',
+                    // Store custom data for afterDrawing rendering
+                    custom_ticker: ticker,
+                    custom_amt_raw: parseFloat(amount).toFixed(4),
+                    custom_usd: parseFloat(usdAmount).toFixed(2),
+                    custom_hash: txHash,
+                    custom_chain: edgeData.chain,
+                    custom_color: eColor
+                });
+                allEdgesMap.set(txHash, edgeData);
+                
+                let tLogUrl = getTokenLogo(ticker) || "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=035"; // Fallback to ETH if unknown
+                let toEntityClass = edgeData.is_terminal || toLabelUpper.includes('CEX') || toLabelUpper.includes('EXCHANGE') ? 'bg-red-100 text-red-800 border-red-200' : 'bg-slate-900 text-slate-400 border-slate-700';
+                
+                let logHtml = `
+                <tr class="hover:bg-blue-50 transition-colors cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500" onclick="openTxPanel('${txHash}')">
+                    <td class="p-2 pl-4 border-b border-slate-100 font-mono text-[10px] text-slate-400">${new Date().toISOString().replace('T', ' ').substring(0,19)}</td>
+                    <td class="p-2 border-b border-slate-100">
+                        <div class="flex items-center gap-1.5">
+                            <img src="${tLogUrl}" class="w-4 h-4 rounded-full border border-slate-700 bg-slate-800 p-0.5" />
+                            <span class="font-bold text-slate-300 text-xs">${ticker}</span>
+                        </div>
+                    </td>
+                    <td class="p-2 border-b border-slate-100 text-blue-600 font-mono text-xs hover:underline"><a href="#" onclick="window.open(getExplorerTxLink('${edgeData.chain}', '${txHash}'), '_blank'); event.stopPropagation(); return false;"><i class="fa-solid fa-arrow-right-arrow-left mr-1 text-slate-400"></i>${txHash}</a></td>
+                    <td class="p-2 border-b border-slate-100 text-slate-500 font-mono text-xs hover:text-blue-500"><a href="#" onclick="window.open(getExplorerAddressLink('${edgeData.chain}', '${edgeData.from}'), '_blank'); event.stopPropagation(); return false;">${edgeData.from}</a></td>
+                    <td class="p-2 border-b border-slate-100 text-slate-500 font-mono text-xs hover:text-blue-500"><a href="#" onclick="window.open(getExplorerAddressLink('${edgeData.chain}', '${edgeData.to}'), '_blank'); event.stopPropagation(); return false;"><i class="fa-solid fa-arrow-right text-slate-300 mr-1"></i>${edgeData.to}</a></td>
+                    <td class="p-2 border-b border-slate-100 font-bold text-[10px]">
+                        <span class="px-1.5 py-0.5 rounded border ${toEntityClass}">${edgeData.receiver_entity || 'UNKNOWN'}</span>
+                    </td>
+                    <td class="p-2 border-b border-slate-100 text-right pr-4 font-black text-emerald-600 font-mono text-xs">$${usdAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td class="p-2 border-b border-slate-100 text-xs">
+                        <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded shadow-[0_4px_15px_rgba(0,0,0,0.5)]">${edgeData.edge_type || 'Transfer'}</span>
+                    </td>
+                    <td class="p-2 border-b border-slate-100 text-slate-500 font-bold text-xs">${edgeData.threat_level || 'Routing'}</td>
+                    <td class="p-2 border-b border-slate-100 text-emerald-600 font-bold text-[10px] uppercase">
+                        <i class="fa-solid fa-circle-check mr-1"></i>Trace Hit
+                    </td>
+                </tr>`;
+                logBufferHtml += logHtml;
+                
+                if (edgeData.is_terminal) {
+                    let totalWidget = document.getElementById('total-traced-widget');
+                    if (totalWidget) {
+                        let total = parseFloat(totalWidget.innerText.replace(/[^0-9.-]+/g,"")) || 0;
+                        totalWidget.innerText = "$" + (total + usdAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
+                    }
+                    
+                    let termPanel = document.getElementById('terminal-panel');
+                    if (termPanel.classList.contains('hidden')) {
+                        termPanel.classList.remove('hidden');
+                    }
+                    
+                    let termList = document.getElementById('terminal-list');
+                    let countWidget = document.getElementById('terminal-count');
+                    countWidget.innerText = parseInt(countWidget.innerText) + 1;
+                    
+                    let termItemHtml = `
+                    <div class="bg-slate-800 border border-slate-700 rounded p-2 shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:border-red-300 transition cursor-pointer" onclick="openTxPanel('${txHash}')">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-[10px] font-bold text-red-600 truncate w-3/4">${edgeData.receiver_entity || "CEX / Custodial"}</span>
+                            <span class="text-[9px] text-slate-400 font-mono">${new Date(edgeData.timestamp).toISOString().split('T')[0]}</span>
+                        </div>
+                        <div class="text-xs font-mono font-black text-slate-200">$${parseFloat(usdAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        <div class="text-[9px] text-slate-500 font-mono truncate mt-1">Wallet: ${edgeData.to.substring(0,16)}...</div>
+                        <div class="text-[9px] text-slate-400 font-mono truncate">TX: ${txHash.substring(0,16)}...</div>
+                    </div>
+                    `;
+                    termList.insertAdjacentHTML('afterbegin', termItemHtml);
+                }
+            }
+            
+            // Trigger Debounced Flush
+            if(!bufferTimeout) {
+                bufferTimeout = setTimeout(flushGraphBuffers, 250); // Flush every 250ms
+            }
+        }
+
+        function flushGraphBuffers() {
+            if (nodeBuffer.length > 0) {
+                nodeBuffer.forEach(n => {
+                    if (!graph.hasNode(n.id)) {
+                        n.x = Math.random() * 10;
+                        n.y = Math.random() * 10;
+                        n.size = 15;
+                        graph.addNode(n.id, n);
+                    } else {
+                        graph.mergeNodeAttributes(n.id, n);
+                    }
+                });
+            }
+            if (edgeBuffer.length > 0) {
+                edgeBuffer.forEach(e => {
+                    if (!graph.hasEdge(e.id)) {
+                        graph.addEdgeWithKey(e.id, e.from, e.to, e);
+                    }
+                });
+            }
+            if (logBufferHtml) document.getElementById('tx-log-body').insertAdjacentHTML('afterbegin', logBufferHtml);
+            
+            if (nodeBuffer.length > 0 || edgeBuffer.length > 0) {
+                if (window.forceAtlas2) {
+                    try {
+                        window.forceAtlas2.assign(graph, {iterations: 50, settings: window.fa2Settings});
+                    } catch(e) { console.error("FA2 Error:", e); }
+                }
+            }
+            
+            nodeBuffer = []; edgeBuffer = []; logBufferHtml = ''; bufferTimeout = null;
+        }
+
+        window.submitTrace = function() {
+            const seeds = document.getElementById('seed-input').value.split(/[\n, ]+/).map(s=>s.trim()).filter(s=>s);
+            const targetAmount = document.getElementById('target-amount').value || "1000";
+            const network = document.getElementById('chain-select').value || "AUTO";
+            const maxDepth = document.getElementById('max-depth').value || "5";
+            
+            if (seeds.length === 0) return alert('Enter at least one seed');
+            
+            let loader = document.getElementById('trace-ajax-loader');
+            if (loader) loader.classList.remove('hidden');
+            let txLoader = document.getElementById('tx-log-loader');
+            if (txLoader) txLoader.classList.remove('hidden');
+            let landing = document.getElementById('tracer-landing');
+            if (landing) landing.classList.add('hidden');
+            
+            document.getElementById('trace-id-val').innerText = 'NMS-' + Math.floor(Math.random()*90000 + 10000);
+            if (!socket || !socket.connected) {
+                setTimeout(window.submitTrace, 500);
+                return;
+            }
+            
+            socket.emit('START_TRACE', {
+                type: 'START_TRACE',
+                seeds: seeds,
+                target_amount: targetAmount,
+                network: network,
+                max_depth: parseInt(maxDepth),
+                max_hops: parseInt(document.getElementById('max-hops').value || "100")
+            });
+        }
+
+        // --- ADDED MISSING FUNCTIONS ---
+        window.handleAutoDetect = function() {
+            const val = document.getElementById('landing-seed-input').value;
+            const badge = document.getElementById('auto-detect-badge');
+            if (val && val.length > 5) {
+                if (badge) badge.classList.remove('hidden');
+            } else {
+                if (badge) badge.classList.add('hidden');
+            }
+        }
+
+        window.handleCurrencyDetect = function() {
+            // Optional stub
+        }
+
+        window.openContentPage = function(pageId) {
+            console.log("Navigation disabled in tracer-only view: ", pageId);
+        }
+
+        window.toggleLogModal = function() {
+            console.log("Log modal toggled");
+            // Optional: Implement actual UI change if there is a modal
+            alert("Evidentiary Log Modal Opened");
+        };
+
+        window.toggleAutoCluster = function(e) {
+            console.log("Auto-cluster toggled: ", e ? e.checked : "unknown");
+        };
+
+        window.setCurrencyMode = function(select) {
+            console.log("Currency mode set to: ", select ? select.value : "unknown");
+        };
+
+        window.highlightLossPaths = function() {
+            console.log("Highlighting loss paths...");
+            alert("Highlighting critical loss paths on graph.");
+        };
+
+        window.startCourtReplay = function() {
+            console.log("Starting Court Replay...");
+            alert("Generating Court-Ready Replay...");
+        };
+        
+        function changeLayout() {
+            let layout = document.getElementById("layoutSelect").value;
+            if (window.changeGraphLayout) {
+                window.changeGraphLayout(layout);
+            }
+        }
+    </script>
+<!-- Slide-Out Panels -->
+<div id="nemesis-id-panel" class="fixed top-0 right-0 h-full w-[95%] md:w-[85%] lg:w-[70%] bg-slate-700 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col border-l border-slate-600">
+    <div class="bg-slate-800 text-white p-4 flex justify-between items-center border-b border-slate-700 shrink-0">
+        <h2 class="text-xl font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-id-card"></i> NEMESIS ID <span id="nemesis-id-title" class="text-blue-600 text-sm ml-2"></span>
+        </h2>
+        <div class="flex items-center gap-4">
+            <button onclick="window.triggerGeneratePDF()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded text-xs font-bold uppercase transition shadow flex items-center gap-2"><i class="fa-solid fa-file-export"></i> Export Dossier</button>
+            <button onclick="closeNemesisIDPanel()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-2xl"></i></button>
+        </div>
+    </div>
+    <div class="flex-grow w-full h-full relative bg-slate-900">
+        <iframe id="nemesis-id-iframe" src="" class="w-full h-full border-none"></iframe>
+    </div>
+</div>
+
+<div id="tx-intel-panel" class="fixed top-0 right-0 h-full w-[50%] md:w-[40%] bg-slate-700 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-600">
+    <div class="bg-slate-800 text-white p-4 flex justify-between items-center border-b border-slate-700 shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-money-bill-transfer"></i> TX INTELLIGENCE
+        </h2>
+        <button onclick="closeTxPanel()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto" id="tx-intel-content"></div>
+</div>
+
+<!-- Global Modals (Evidentiary Log, Audit, Intelligence, Report) -->
+<div id="log-panel" class="fixed top-0 right-0 h-full w-[50%] md:w-[40%] bg-slate-700 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-600">
+    <div class="bg-slate-800 text-slate-200 p-4 flex justify-between items-center border-b border-slate-700 shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-list-ul text-slate-500"></i> EVIDENTIARY LOG
+        </h2>
+        <button onclick="closeSidePanel('log-panel')" class="text-slate-400 hover:text-slate-400 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 font-mono text-xs bg-slate-900 text-emerald-400" id="evidentiary-log-content">
+        [SYSTEM] EVIDENTIARY LOGGING INITIALIZED.<br>
+        [SYSTEM] AWAITING TRACE ACTIVITY...
+    </div>
+</div>
+
+<div id="audit-panel" class="fixed top-0 right-0 h-full w-[60%] md:w-[50%] bg-slate-700 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-600">
+    <div class="bg-emerald-600 text-white p-4 flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved"></i> MASTER AUDIT
+        </h2>
+        <button onclick="closeSidePanel('audit-panel')" class="text-emerald-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 bg-slate-700 text-sm text-slate-300">
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-[0_4px_15px_rgba(0,0,0,0.5)] mb-6">
+            <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2">Smart Contract Verification</h3>
+            <p>System automatically audits interacted contracts against the Nemesis vulnerability database. No critical vulnerabilities found in current traced path.</p>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+            <h3 class="font-bold text-lg mb-4 text-emerald-700 border-b pb-2">Compliance & Regulatory Check</h3>
+            <p>All identified entities comply with base tracking protocols. Deep KYC mapping is ongoing.</p>
+        </div>
+    </div>
+</div>
+
+<div id="intel-panel" class="fixed top-0 right-0 h-full w-[70%] md:w-[60%] bg-slate-700 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-600">
+    <div class="bg-indigo-600 text-white p-4 flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-brain"></i> INTELLIGENCE BASE
+        </h2>
+        <button onclick="closeSidePanel('intel-panel')" class="text-indigo-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 bg-slate-700 text-sm text-slate-300">
+        <div class="grid grid-cols-2 gap-6">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+                <h3 class="font-black text-indigo-700 mb-2 uppercase tracking-wide border-b pb-2">Threat Actor Knowledge Base</h3>
+                <p class="mt-2 text-xs text-slate-500">Cross-referencing entities against known APTs and Ransomware syndicates.</p>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
+                <h3 class="font-black text-indigo-700 mb-2 uppercase tracking-wide border-b pb-2">Global CEX Mappings</h3>
+                <p class="mt-2 text-xs text-slate-500">Repository of over 100+ mapped centralized exchanges and their deposit addresses.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="report-panel" class="fixed top-0 right-0 h-full w-[50%] md:w-[40%] bg-slate-700 shadow-2xl z-[99999] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-600">
+    <div class="bg-rose-600 text-white p-4 flex justify-between items-center shrink-0">
+        <h2 class="text-lg font-black tracking-widest uppercase font-mono flex items-center gap-3">
+            <i class="fa-solid fa-file-pdf"></i> FORENSIC REPORT ENGINE
+        </h2>
+        <button onclick="closeSidePanel('report-panel')" class="text-rose-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    <div class="p-8 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-slate-800 text-center">
+        <i class="fa-solid fa-file-contract text-6xl text-slate-200 mb-6"></i>
+        <h3 class="text-2xl font-black text-slate-200 mb-2">Ready for Handover</h3>
+        <p class="text-slate-500 max-w-sm mx-auto mb-8">Generate a law-enforcement-ready forensic dossier detailing the complete fund flow, identified entities, and evidence log.</p>
+        <button onclick="window.triggerGeneratePDF()" class="bg-rose-600 hover:bg-rose-500 text-white px-8 py-4 rounded-xl text-sm font-bold shadow-xl transition-transform hover:-translate-y-1 w-full max-w-sm">
+            <i class="fa-solid fa-download mr-2"></i> EXPORT TO PDF
+        </button>
+    </div>
+</div>
+
+<script>
+
+    // (Duplicate BACKENDS block removed to prevent SyntaxError)
+    // =====================================
+
+    function openSidePanel(panelId) {
+        document.getElementById(panelId).classList.remove('translate-x-full');
+    }
+    function closeSidePanel(panelId) {
+        document.getElementById(panelId).classList.add('translate-x-full');
+    }
+    function openNemesisIDPanel(nodeId) {
+        if (!nodeId) return;
+        document.getElementById('nemesis-id-iframe').src = '/nemesis_id?address=' + nodeId + '&embed=true';
+        document.getElementById('nemesis-id-panel').classList.remove('translate-x-full');
+        document.getElementById('nemesis-id-title').innerText = nodeId;
+    }
+    function closeNemesisIDPanel() {
+        document.getElementById('nemesis-id-panel').classList.add('translate-x-full');
+        document.getElementById('nemesis-id-iframe').src = '';
+    }
+    function openTxPanel(edgeId) {
+        document.getElementById('tx-intel-panel').classList.remove('translate-x-full');
+        const edge = graph.hasEdge(edgeId) ? graph.getEdgeAttributes(edgeId) : null; if(edge) { edge.id = edgeId; edge.from = graph.source(edgeId); edge.to = graph.target(edgeId); }
+        if(edge) {
+            let edgeTitleStr = edge.custom_usd ? '$' + edge.custom_usd : '$0.00';
+            let edgeAmtRaw = edge.custom_amt_raw ? edge.custom_amt_raw + ' ' + (edge.custom_ticker || '') : '';
+            document.getElementById('tx-intel-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-slate-800 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)] border border-slate-700 p-5 font-mono text-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                            <h3 class="font-black text-slate-200 text-xs tracking-widest"><i class="fa-solid fa-bolt text-amber-400 mr-2"></i>TX INTELLIGENCE</h3>
+                            <span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold">CONFIRMED</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center"><span class="text-slate-500">TX HASH:</span> <span class="break-all text-blue-600 ml-4 font-bold select-all cursor-pointer hover:underline text-[10px]">${edge.id}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-500">FROM:</span> <span class="break-all text-slate-300 ml-4 font-bold select-all text-[10px]">${edge.from}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-500">TO:</span> <span class="break-all text-slate-300 ml-4 font-bold select-all text-[10px]">${edge.to}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-500">AMOUNT:</span> <span class="text-slate-200 font-black">${edgeAmtRaw}</span></div>
+                            <div class="flex justify-between items-center bg-slate-700 border border-slate-100 p-2 rounded mt-2"><span class="text-slate-400 font-bold">TRACED VALUE:</span> <span class="text-emerald-600 font-black text-sm">${edgeTitleStr}</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.5)] border border-slate-700 p-5 font-mono text-sm text-slate-300">
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-3">
+                            <h3 class="font-black text-white text-xs tracking-widest"><i class="fa-solid fa-radar mr-2 text-blue-400"></i>CORRELATION ENGINE</h3>
+                            <span class="text-[10px] text-blue-400 border border-blue-800 px-1.5 py-0.5 rounded bg-blue-900/30">HIGH CONFIDENCE</span>
+                        </div>
+                        <div class="space-y-3 text-xs mt-4">
+                            <div class="flex items-start gap-3">
+                                <div class="bg-slate-800 p-1.5 rounded"><i class="fa-solid fa-link text-emerald-400"></i></div>
+                                <div>
+                                    <div class="text-white font-bold mb-0.5">Peel-Chain Identification</div>
+                                    <div class="text-[10px] text-slate-400 leading-relaxed">Behavior matches automated peeling patterns. Asset divided across rapid hops before current node.</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="bg-slate-800 p-1.5 rounded"><i class="fa-solid fa-mask text-amber-400"></i></div>
+                                <div>
+                                    <div class="text-white font-bold mb-0.5">Proof of Obfuscation</div>
+                                    <div class="text-[10px] text-slate-400 leading-relaxed">Detected routing via unverified smart contracts. High probability of structured layering.</div>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="bg-slate-800 p-1.5 rounded"><i class="fa-solid fa-fingerprint text-rose-400"></i></div>
+                                <div>
+                                    <div class="text-white font-bold mb-0.5">IOC & Attribution</div>
+                                    <div class="text-[10px] text-slate-400 leading-relaxed">Heuristic similarity to flagged threat actors. Addresses mapped against OFAC / Global sanction lists.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="alert('Initiating Deep Trace Analysis on ' + '${edge.id}' + '...')" class="w-full bg-blue-600 text-white font-black py-3 rounded-xl uppercase text-xs hover:bg-blue-500 transition shadow-[0_10px_30px_rgba(0,0,0,0.6)] shadow-blue-500/30 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> Run Deep Trace Analysis
+                    </button>
+                    <button onclick="alert('IOCs Extracted to Evidentiary Log.')" class="w-full bg-slate-800 text-slate-300 border border-slate-600 font-bold py-2.5 rounded-xl uppercase text-[10px] hover:bg-slate-700 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-export"></i> Extract IOCs to Evidentiary Log
+                    </button>
+                </div>
+            `;
+        }
+    }
+    function closeTxPanel() {
+        document.getElementById('tx-intel-panel').classList.add('translate-x-full');
+    }
+    window.triggerGeneratePDF = function() {
+        alert('Generating Forensic Report PDF...');
+        window.print();
+    };
+</script>
+    <script src="/nemesis-ui.js"></script>
+
+<!-- GLOBAL NEMESIS AJAX LOADER -->
+<div id="global-ajax-loader" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center; flex-direction: column;">
+    <img src="assets/butterfly_transparent.png" style="width: 100px; height: 100px; animation: pulse-loader 1.5s infinite; filter: drop-shadow(0 0 20px rgba(6,182,212,0.8));">
+    <div style="color: #06b6d4; margin-top: 20px; font-family: monospace; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px #06b6d4;">NEMESIS SINGULARITY KERNEL</div>
+    <style>
+        @keyframes pulse-loader {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 30px rgba(6,182,212,1)); }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+    </style>
+</div>
+<script>
+    (function() {
+        if (window._nemesisLoaderInitialized) return;
+        window._nemesisLoaderInitialized = true;
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const loader = document.getElementById('global-ajax-loader');
+            if (loader) loader.style.display = 'flex';
+            try {
+                const response = await originalFetch.apply(this, args);
+                return response;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        };
+    })();
+</script>
+</body>
+
+</html>

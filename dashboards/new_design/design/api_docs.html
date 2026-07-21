@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation | NEMESIS Enterprise Mock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ENTERPRISE STARRY FLOW THEME (Yellow, Blue, White) */
+        :root {
+            --bg-dark: #0f172a;
+            --brand-blue: #1d4ed8;
+            --brand-yellow: #facc15;
+            --brand-white: #f8fafc;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-border: rgba(250, 204, 21, 0.25);
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--brand-white);
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .starry-canvas {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 40%, var(--brand-blue) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 60%, rgba(250, 204, 21, 0.15) 0%, transparent 35%),
+                        radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            background-size: 200% 200%;
+            filter: blur(80px) saturate(150%);
+            animation: swirl 25s infinite alternate ease-in-out;
+            opacity: 0.8;
+        }
+
+        @keyframes swirl {
+            0% { background-position: 0% 0%; transform: scale(1); }
+            50% { background-position: 100% 100%; transform: scale(1.05); }
+            100% { background-position: 0% 50%; transform: scale(1); }
+        }
+
+        .ento-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .title-glow {
+            font-weight: 900;
+            background: linear-gradient(to right, #ffffff, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(250, 204, 21, 0.3));
+        }
+        
+        .nav-link {
+            position: relative;
+            color: #cbd5e1;
+            transition: color 0.2s;
+        }
+        .nav-link:hover { color: var(--brand-white); }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 0%; height: 2px;
+            background: var(--brand-yellow);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after { width: 100%; }
+
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div class="starry-canvas"></div>
+
+    <!-- Navigation -->
+    <nav class="ento-panel m-4 px-6 py-4 flex items-center justify-between z-20 sticky top-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center border border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.4)]">
+                <i class="fa-solid fa-code text-white text-xl"></i>
+            </div>
+            <h1 class="title-glow text-2xl tracking-tight">API DOCS</h1>
+        </div>
+        <div class="hidden md:flex items-center gap-8 font-medium text-sm tracking-wide">
+            <a href="index.html" class="nav-link">Platform</a>
+            <a href="nemesis_tracer.html" class="nav-link">Omni-Tracer</a>
+            <a href="nemesis_id.html" class="nav-link">Nemesis ID</a>
+            <a href="nemesis_intelligence.html" class="nav-link">Intelligence</a>
+            <a href="about.html" class="nav-link">About</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded font-mono border border-slate-700">
+                v2.1.0-rc4
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex w-full max-w-7xl mx-auto p-4 md:p-8 gap-8 z-10">
+        
+        <!-- API Sidebar -->
+        <aside class="w-64 hidden md:block">
+            <div class="ento-panel p-4 sticky top-28">
+                <h3 class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-4">Endpoints</h3>
+                <ul class="space-y-3 text-sm font-mono">
+                    <li><a href="#" class="text-yellow-400 hover:text-white transition block">GET /api/v2/entity</a></li>
+                    <li><a href="#" class="text-slate-300 hover:text-white transition block">POST /api/v2/trace</a></li>
+                    <li><a href="#" class="text-slate-300 hover:text-white transition block">GET /api/v2/intel</a></li>
+                    <li><a href="#" class="text-slate-300 hover:text-white transition block">WS /ws/ledger</a></li>
+                </ul>
+                <h3 class="text-xs uppercase tracking-widest text-slate-400 font-bold mt-8 mb-4">Authentication</h3>
+                <ul class="space-y-3 text-sm font-mono">
+                    <li><a href="#" class="text-slate-300 hover:text-white transition block">Bearer Tokens</a></li>
+                    <li><a href="#" class="text-slate-300 hover:text-white transition block">Rate Limits</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- API Content -->
+        <div class="flex-1">
+            <div class="ento-panel p-8">
+                <h2 class="text-3xl font-extrabold mb-6 title-glow border-b border-slate-700 pb-4">Entity Resolution API</h2>
+                
+                <p class="text-slate-300 mb-8 leading-relaxed">
+                    The Entity Resolution API allows institutional clients to programmatically query our 1.2 billion-node ontology to identify wallet owners, associated risk scores, and known counterparties.
+                </p>
+
+                <div class="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden mb-8">
+                    <div class="bg-slate-800 px-4 py-2 border-b border-slate-700 flex items-center gap-3">
+                        <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded">GET</span>
+                        <code class="text-sm text-slate-300">/api/v2/entity/{address}</code>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-sm font-bold text-white mb-2">Parameters</h4>
+                        <table class="w-full text-left text-sm text-slate-400 mb-6">
+                            <tr class="border-b border-slate-800"><th class="pb-2">Name</th><th class="pb-2">Type</th><th class="pb-2">Description</th></tr>
+                            <tr class="border-b border-slate-800"><td class="py-2"><code class="text-yellow-400">address</code></td><td class="py-2 text-slate-500">string</td><td class="py-2">The EVM, BTC, or Solana address to query.</td></tr>
+                            <tr><td class="py-2"><code class="text-yellow-400">include_tx</code></td><td class="py-2 text-slate-500">boolean</td><td class="py-2">Include recent transaction hashes.</td></tr>
+                        </table>
+
+                        <h4 class="text-sm font-bold text-white mb-2">Example Response</h4>
+                        <pre class="bg-slate-950 p-4 rounded text-xs text-green-400 overflow-x-auto border border-slate-800">
+{
+  "status": "success",
+  "data": {
+    "address": "0x3b5d17e2...",
+    "entity_name": "Lazarus Group",
+    "classification": "THREAT_ACTOR",
+    "risk_score": 98.5,
+    "sanctions": {
+      "ofac_sdn": true,
+      "date_added": "2024-05-12T00:00:00Z"
+    }
+  }
+}</pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>

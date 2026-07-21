@@ -52,14 +52,14 @@ class IntelligencePipeline:
         if callable(scrape_oklink_tags):
             oklink_task = asyncio.create_task(scrape_oklink_tags("eth", address))
         else:
-            async def mock_oklink(): return {"attributionTags": ["Unresolved"]}
-            oklink_task = asyncio.create_task(mock_oklink())
+            async def empty_oklink(): return {"attributionTags": ["Unresolved"]}
+            oklink_task = asyncio.create_task(empty_oklink())
             
         if callable(aggregate_osint):
             osint_task = asyncio.create_task(aggregate_osint("Unknown", "CRYPTO_WALLET", address, "ETHEREUM"))
         else:
-            async def mock_osint(): return {"scores": {"trust": 50, "threat": 0}, "negative_news": []}
-            osint_task = asyncio.create_task(mock_osint())
+            async def empty_osint(): return {"scores": {"trust": 0, "threat": 0}, "negative_news": [], "entity_name": "Unknown Entity"}
+            osint_task = asyncio.create_task(empty_osint())
         
         # Live Darknet Enrichment
         if WalletEnrichmentEngine:
@@ -72,14 +72,14 @@ class IntelligencePipeline:
                         return await asyncio.to_thread(engine.fetch_data, address, "eth")
                     darknet_task = asyncio.create_task(async_fetch())
                 else:
-                    async def mock_darknet(): return {"threat_level": "Unknown", "darknet_mentions": 0}
-                    darknet_task = asyncio.create_task(mock_darknet())
+                    async def empty_darknet(): return {"threat_level": "Unknown", "darknet_mentions": 0}
+                    darknet_task = asyncio.create_task(empty_darknet())
             except Exception:
-                async def mock_darknet(): return {"threat_level": "Unknown", "darknet_mentions": 0}
-                darknet_task = asyncio.create_task(mock_darknet())
+                async def empty_darknet(): return {"threat_level": "Unknown", "darknet_mentions": 0}
+                darknet_task = asyncio.create_task(empty_darknet())
         else:
-            async def mock_darknet(): return {"threat_level": "Unknown", "darknet_mentions": 0}
-            darknet_task = asyncio.create_task(mock_darknet())
+            async def empty_darknet(): return {"threat_level": "Unknown", "darknet_mentions": 0}
+            darknet_task = asyncio.create_task(empty_darknet())
         
         # Wait for all intelligence gathers
         oklink_data, osint_data, darknet_data = await asyncio.gather(

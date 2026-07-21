@@ -1,0 +1,10 @@
+*.py
+*.bat
+*.exe
+backend/
+workers/
+.venv/
+__pycache__/
+.git/
+test_results/
+test_results_wallets/

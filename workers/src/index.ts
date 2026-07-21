@@ -97,8 +97,7 @@ export default {
   },
 
   async queue(batch: MessageBatch<any>, env: Env): Promise<void> {
-    const primaryWebhook = env.PYTHON_API_URL || 'https://projectnemesis.onrender.com/api/trace/webhook';
-    const fallbackWebhook = env.VERCEL_API_URL; // e.g. https://nemesis-vercel.vercel.app/api/trace/webhook
+    const primaryWebhook = env.PYTHON_API_URL || 'http://127.0.0.1:8000/api/trace/webhook';
 
     for (const msg of batch.messages) {
       try {
@@ -108,20 +107,10 @@ export default {
           body: JSON.stringify(msg.body)
         });
 
-        // AUTO-SWITCH: If primary fails and Vercel fallback is configured
-        if (!response.ok && fallbackWebhook) {
-          console.warn(`Primary backend (${primaryWebhook}) failed with status ${response.status}. Auto-switching to Vercel fallback...`);
-          response = await fetch(fallbackWebhook, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(msg.body)
-          });
-        }
-
         if (response.ok) {
           msg.ack();
         } else {
-          throw new Error(`Both backends failed to process trace request.`);
+          throw new Error(`Backend failed to process trace request.`);
         }
       } catch (err) {
         console.error("Failed to forward queue msg:", err);
