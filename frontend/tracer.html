@@ -7,12 +7,12 @@
 
     // === CLOUDFLARE NATIVE ROUTING ===
     function getBackendHttpUrl(path) {
-        if (window.location.protocol === "file:") return `http://127.0.0.1:8000/api/${path}`;
+        if (window.location.protocol === "file:") return `https://nemesis-backend.legionxgaming2021.workers.dev/api/${path}`;
         return `/api/${path}`;
     }
 
     function getBackendWsUrl(path) {
-        if (window.location.protocol === "file:") return `ws://127.0.0.1:8000/api/ws/${path}`;
+        if (window.location.protocol === "file:") return `wss://nemesis-backend.legionxgaming2021.workers.dev/api/ws/${path}`;
         if (window.currentBackendIndex === 0) {
             let protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
             let host = window.location.host;

@@ -113,7 +113,7 @@
 
             try {
                 // Connect to FastAPI endpoint
-                const res = await fetch(`/api/darknet/search?q=${encodeURIComponent(query)}`);
+                const res = await fetch(`https://nemesis-backend.legionxgaming2021.workers.dev/api/darknet/search?q=${encodeURIComponent(query)}`);
                 if(res.ok) {
                     const data = await res.json();
                     renderFlipcards(data.results);
@@ -242,7 +242,7 @@
             // Fetch live data or simulate if backend not ready
             setInterval(async () => {
                 try {
-                    const res = await fetch('/api/darknet/live');
+                    const res = await fetch('https://nemesis-backend.legionxgaming2021.workers.dev/api/darknet/live');
                     if (res.ok) {
                         const logs = await res.json();
                         if (logs && logs.length > 0) {

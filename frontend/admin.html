@@ -161,7 +161,7 @@
                     document.getElementById('audit-logs').innerHTML = 'Running compliance checks & test traces...';
                     term.writeln(`\r\n\x1b[35m[AUDIT] Initiating out-of-cycle full system audit and trace verification...\x1b[0m\r\n`);
                     
-                    fetch('http://127.0.0.1:3001/api/trigger_audit', { method: 'POST' })
+                    fetch('https://nemesis-backend.legionxgaming2021.workers.dev/api/trigger_audit', { method: 'POST' })
                         .catch(e => term.writeln(`\x1b[31m[ERROR] Failed to contact backend for audit: ${e.message}\x1b[0m\r\n`));
 
                     setTimeout(() => {
@@ -340,7 +340,7 @@
         
         // Since we are running locally, let's use the default dev server port if we are testing locally
         if(window.location.host === "" || window.location.port === "5500" || window.location.port === "3000") {
-            ws_url = `ws://127.0.0.1:8000/api/admin/console`;
+            ws_url = `wss://nemesis-backend.legionxgaming2021.workers.dev/api/admin/console`;
         }
         
         const termSocket = new WebSocket(ws_url);
@@ -364,7 +364,7 @@
             try {
                 let api_url = `/api/admin/artifacts`;
                 if(window.location.host === "" || window.location.port === "5500" || window.location.port === "3000") {
-                    api_url = `http://127.0.0.1:8000/api/admin/artifacts`;
+                    api_url = `https://nemesis-backend.legionxgaming2021.workers.dev/api/admin/artifacts`;
                 }
                 const res = await fetch(api_url);
                 const data = await res.json();

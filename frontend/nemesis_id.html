@@ -26,7 +26,7 @@
             function sendBatch() {
                 if(batch.length === 0) return;
                 const logsToSend = batch.splice(0, batch.length);
-                fetch('/api/logs/frontend', {
+                fetch('https://nemesis-backend.legionxgaming2021.workers.dev/api/logs/frontend', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ logs: logsToSend })
@@ -1616,25 +1616,25 @@
                 
                 try {
                     // Start parallel fetches
-                    const initP = fetch(`/api/node/init?address=${encodeURIComponent(address)}`).then(async r => {
+                    const initP = fetch(`https://nemesis-backend.legionxgaming2021.workers.dev/api/node/init?address=${encodeURIComponent(address)}`).then(async r => {
                         if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("Node Context Identified...");
                         return r.json();
                     }).catch(e => ({ status: 'error', message: e.message, basic_label: 'Unknown (Error)' }));
                     
-                    const osintP = fetch(`/api/node/osint?address=${encodeURIComponent(address)}`).then(async r => {
+                    const osintP = fetch(`https://nemesis-backend.legionxgaming2021.workers.dev/api/node/osint?address=${encodeURIComponent(address)}`).then(async r => {
                         if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("OSINT Fusion Complete...");
                         return r.json();
                     }).catch(e => ({ status: 'error', message: e.message, is_alert: false, label: 'Unknown' }));
                     
-                    const aiP = fetch(`/api/node/ai?address=${encodeURIComponent(address)}`).then(async r => {
+                    const aiP = fetch(`https://nemesis-backend.legionxgaming2021.workers.dev/api/node/ai?address=${encodeURIComponent(address)}`).then(async r => {
                         if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("Swarm AI Analysis Complete...");
                         return r.json();
                     }).catch(e => ({ status: 'error', message: e.message }));
                     
-                    const graphP = fetch(`/api/node/graph?address=${encodeURIComponent(address)}`).then(async r => {
+                    const graphP = fetch(`https://nemesis-backend.legionxgaming2021.workers.dev/api/node/graph?address=${encodeURIComponent(address)}`).then(async r => {
                         if (!r.ok) throw new Error(`HTTP ${r.status}`);
                         if (isSingleSearch) triggerLoader("Cross-Chain Graph Synthesized...");
                         const data = await r.json();
@@ -2084,7 +2084,7 @@ async function executeNemesisSearch() {
             }, 800);
             
             try {
-                const res = await fetch(`/api/corporate_intel?wallet_address=${address}&chain=${chain}&entity_name=${encodeURIComponent(entityName)}&entity_type=${entityType}`);
+                const res = await fetch(`https://nemesis-backend.legionxgaming2021.workers.dev/api/corporate_intel?wallet_address=${address}&chain=${chain}&entity_name=${encodeURIComponent(entityName)}&entity_type=${entityType}`);
                 const intel = await res.json();
                 
                 clearInterval(simInterval);
@@ -3425,7 +3425,7 @@ async function executeNemesisSearch() {
                 return;
             }
             triggerLoader("Decoding Transaction Trace...");
-            fetch('/api/tx/details?hash=' + encodeURIComponent(txHash), {
+            fetch('https://nemesis-backend.legionxgaming2021.workers.dev/api/tx/details?hash=' + encodeURIComponent(txHash), {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

@@ -137,16 +137,11 @@ PYTHON_API_URL = "http://127.0.0.1:8000"
         print("\n    [!] WARNING: Could not extract Worker URL!")
         os.chdir(base_dir)
     
-    # 6. Deploy Frontend Pages (Unified React App)
-    print("\n[+] Deploying Unified React Frontend to Cloudflare Pages...")
-    react_dir = os.path.join(os.path.dirname(base_dir), "nemesis_id", "frontend")
-    os.chdir(react_dir)
-    print("    -> Installing NPM dependencies...")
-    run_cmd("npm install --legacy-peer-deps")
-    print("    -> Building React App...")
-    run_cmd("npm run build")
-    print("    -> Deploying to Cloudflare Pages (nemesis-id-frontend)...")
-    pages_out = run_cmd('npx wrangler pages deploy dist --project-name nemesis-id-frontend', capture=True)
+    # 6. Deploy Frontend Pages
+    print("\n[+] Deploying Frontend to Cloudflare Pages...")
+    os.chdir(base_dir)
+    print("    -> Deploying 'frontend' directory to Cloudflare Pages (nemesis-frontend)...")
+    pages_out = run_cmd('npx wrangler pages deploy frontend --project-name nemesis-frontend', capture=True)
     print(pages_out)
 
     print("\n=====================================================")
